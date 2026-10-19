@@ -13,3 +13,4 @@
 # Examples:
 # 3f9a1c2b7d: {status: attending, owner: John, note: "Ask about a panel slot"}
 # 8c21e0d4aa: {status: attended, owner: John, leads: 4, rating: 4, note: "Met 2 CFOs from PE-backed cos"}
+demo000002: {"status": "interested", "note": "test flag from setup", "by": "bennimagni", "on": "2026-10-19"}
