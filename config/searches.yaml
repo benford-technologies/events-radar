@@ -1,0 +1,107 @@
+# Each search group is researched once per scan.
+# kind: "event" goes to the Events tab, "hackathon" goes to the Hackathons map.
+# brief: what Claude is asked to find (it plans its own web searches from this).
+# queries: used only when FIRECRAWL_API_KEY is set (Firecrawl search + scrape).
+# Add, remove or reword groups freely; the next morning's scan picks them up.
+
+groups:
+  - id: cfo-uk
+    kind: event
+    brief: >
+      Conferences, summits, roundtables, dinners and awards for CFOs, finance directors
+      and finance leaders in London and the rest of the UK.
+    queries:
+      - CFO conference London 2027
+      - finance director summit UK upcoming
+      - CFO roundtable dinner London
+
+  - id: cfo-norway
+    kind: event
+    brief: >
+      Events for CFOs, økonomisjefer and finance leaders in Norway and the Nordics
+      (Oslo, Bergen, Trondheim, Stavanger, Stockholm, Copenhagen). Search in Norwegian and English,
+      e.g. "CFO-konferanse", "økonomiledere", "Finansdagene".
+    queries:
+      - CFO konferanse Oslo 2027
+      - økonomiledere konferanse Norge
+      - Nordic CFO summit
+
+  - id: audit-accounting
+    kind: event
+    brief: >
+      Audit, accounting and finance-profession conferences in the UK and Norway, including
+      events by ICAEW, ACCA, ICAS, CIMA, Revisorforeningen, Regnskap Norge and accounting software
+      vendors (Xero, Visma, Tripletex, Sage).
+    queries:
+      - accounting conference London 2027
+      - Revisorforeningen konferanse
+      - Regnskap Norge konferanse
+
+  - id: finance-tech
+    kind: event
+    brief: >
+      Fintech, AI-in-finance, finance transformation, ERP and regtech events in London and Oslo
+      where finance teams and founders attend.
+    queries:
+      - AI in finance conference London
+      - finance transformation summit London
+      - fintech event Oslo
+
+  - id: founders-investors
+    kind: event
+    brief: >
+      Major startup, scale-up and investor events in London and Norway (e.g. London Tech Week,
+      Oslo Innovation Week, Nordic startup conferences) where founders, CFOs and VCs gather.
+    queries:
+      - London Tech Week 2027
+      - Oslo Innovation Week
+      - startup conference Norway 2027
+
+  - id: linkedin-events
+    kind: event
+    brief: >
+      Public LinkedIn event pages (linkedin.com/events) for CFO, finance leader, accounting or
+      audit events in London or Oslo. Only use pages visible without logging in.
+    queries:
+      - site:linkedin.com/events CFO London
+      - site:linkedin.com/events økonomi Oslo
+
+  - id: speaker-calls
+    kind: event
+    brief: >
+      Open calls for speakers / call for papers for finance, accounting, audit, CFO or fintech
+      conferences in the UK, Norway or the Nordics. Note the submission deadline.
+    queries:
+      - call for speakers finance conference 2027 UK
+      - call for speakers fintech Nordics
+
+  - id: hack-london
+    kind: hackathon
+    brief: >
+      Hackathons run by or held at universities in London (Imperial, UCL, King's, LSE, Queen Mary,
+      City, Westminster, Brunel, Royal Holloway, Goldsmiths, Greenwich and others), including
+      student-society hackathons, MLH events and Devpost / Luma listings.
+    queries:
+      - university hackathon London 2027
+      - Imperial UCL KCL hackathon students
+      - MLH hackathon London
+
+  - id: hack-norway
+    kind: hackathon
+    brief: >
+      Hackathons run by or held at universities in Norway (NTNU, Universitetet i Oslo, UiB, NHH,
+      BI, OsloMet, UiT, UiS, UiA, NMBU, Kristiania and others), including student-organisation
+      hackathons. Search in Norwegian and English.
+    queries:
+      - hackathon NTNU
+      - hackathon Universitetet i Oslo studenter
+      - hackathon Bergen studenter
+
+  - id: hack-fintech
+    kind: hackathon
+    brief: >
+      Fintech, accounting, finance or AI hackathons for students in London or Norway
+      (including ones sponsored by banks, Big Four firms or fintechs).
+    queries:
+      - fintech hackathon students London
+      - fintech hackathon Oslo

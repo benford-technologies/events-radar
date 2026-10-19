@@ -1,0 +1,34 @@
+# Universities shown on the hackathon map. Hackathons the scanner finds are pinned to
+# the matching university. Add more here; names must be unique.
+universities:
+  # London
+  - {name: Imperial College London, city: London, country: UK, lat: 51.4988, lng: -0.1749}
+  - {name: University College London (UCL), city: London, country: UK, lat: 51.5246, lng: -0.1340}
+  - {name: King's College London, city: London, country: UK, lat: 51.5115, lng: -0.1160}
+  - {name: London School of Economics (LSE), city: London, country: UK, lat: 51.5144, lng: -0.1165}
+  - {name: Queen Mary University of London, city: London, country: UK, lat: 51.5241, lng: -0.0404}
+  - {name: "City St George's, University of London", city: London, country: UK, lat: 51.5279, lng: -0.1025}
+  - {name: University of Westminster, city: London, country: UK, lat: 51.5216, lng: -0.1430}
+  - {name: Brunel University London, city: London, country: UK, lat: 51.5326, lng: -0.4730}
+  - {name: "Royal Holloway, University of London", city: Egham, country: UK, lat: 51.4256, lng: -0.5630}
+  - {name: "Goldsmiths, University of London", city: London, country: UK, lat: 51.4743, lng: -0.0354}
+  - {name: University of Greenwich, city: London, country: UK, lat: 51.4827, lng: -0.0068}
+  - {name: "Birkbeck, University of London", city: London, country: UK, lat: 51.5219, lng: -0.1302}
+  - {name: SOAS University of London, city: London, country: UK, lat: 51.5223, lng: -0.1290}
+  - {name: Kingston University, city: London, country: UK, lat: 51.4031, lng: -0.3036}
+  - {name: Middlesex University, city: London, country: UK, lat: 51.5898, lng: -0.2283}
+  - {name: University of East London, city: London, country: UK, lat: 51.5079, lng: 0.0650}
+  - {name: London South Bank University, city: London, country: UK, lat: 51.4983, lng: -0.1020}
+  # Norway
+  - {name: NTNU, city: Trondheim, country: Norway, lat: 63.4195, lng: 10.4022}
+  - {name: University of Oslo (UiO), city: Oslo, country: Norway, lat: 59.9399, lng: 10.7217}
+  - {name: University of Bergen (UiB), city: Bergen, country: Norway, lat: 60.3878, lng: 5.3221}
+  - {name: NHH Norwegian School of Economics, city: Bergen, country: Norway, lat: 60.4228, lng: 5.3019}
+  - {name: BI Norwegian Business School, city: Oslo, country: Norway, lat: 59.9486, lng: 10.7686}
+  - {name: OsloMet, city: Oslo, country: Norway, lat: 59.9196, lng: 10.7355}
+  - {name: Kristiania University College, city: Oslo, country: Norway, lat: 59.9160, lng: 10.7495}
+  - {name: UiT The Arctic University of Norway, city: Tromsø, country: Norway, lat: 69.6815, lng: 18.9770}
+  - {name: University of Stavanger (UiS), city: Stavanger, country: Norway, lat: 58.9378, lng: 5.6976}
+  - {name: University of Agder (UiA), city: Kristiansand, country: Norway, lat: 58.1636, lng: 8.0018}
+  - {name: NMBU, city: Ås, country: Norway, lat: 59.6656, lng: 10.7684}
+  - {name: Nord University, city: Bodø, country: Norway, lat: 67.2886, lng: 14.5610}

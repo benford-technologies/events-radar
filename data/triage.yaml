@@ -1,0 +1,9 @@
+# Team decisions on scanned events. The scanner never overwrites this file.
+# Copy a line from the dashboard ("Copy triage line") and paste it here.
+#
+# status: attending | shortlisted | maybe | skip
+# owner:  who is on it (optional)
+# note:   free text (optional)
+#
+# Example:
+# 3f9a1c2b7d: {status: attending, owner: John, note: "Ask about a panel slot"}

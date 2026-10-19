@@ -1,0 +1,7 @@
+# Events the team adds by hand (ones the scanner misses, invites, private dinners).
+# They show up in the dashboard next to scanned events.
+# Fields: name, start_date (YYYY-MM-DD), end_date, city, country, url, organiser,
+#         category (cfo | audit_accounting | finance_tech | founders_investors | hackathon | other),
+#         kind (event | hackathon), university (hackathons only, must match config/universities.yaml),
+#         speaker_opportunity (true/false), notes
+events: []
