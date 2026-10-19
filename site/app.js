@@ -14,19 +14,20 @@
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
 
-  const state = { events: [], hackathons: [], universities: [], runs: [], meta: {}, region: "london", uni: null, recordView: "went" };
+  const state = { events: [], hackathons: [], universities: [], runs: [], meta: {}, region: "london", uni: null, recordView: "went", team: {}, drafts: {}, openPlan: null };
 
   // ---------------------------------------------------------------- load
   async function load() {
     const get = (p) => fetch(p, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    const [events, hackathons, universities, runs, meta] = await Promise.all([
+    const [events, hackathons, universities, runs, meta, team] = await Promise.all([
       get("api/events.json"), get("api/hackathons.json"), get("api/universities.json"),
-      get("api/runs.json"), get("api/meta.json"),
+      get("api/runs.json"), get("api/meta.json"), get("api/team.json"),
     ]);
     Object.assign(state, {
       events: events || [], hackathons: hackathons || [], universities: universities || [],
-      runs: runs || [], meta: meta || {},
+      runs: runs || [], meta: meta || {}, team: team || { team: [], roles: ["Attendee"], pitch_statuses: [] },
     });
+    fillPersonFilter();
 
     const last = state.runs[0];
     state.scanNote = last ? ` Last scanned ${fmtDateTime(last.finished_at)}, ${last.new} new.` : " Refreshed every morning.";
@@ -80,6 +81,8 @@
       isNew(e) && !isPast(e) ? `<span class="chip new">New</span>` : "",
       e.status && e.status !== "new" && !e._hideStatus ? `<span class="chip ${esc(e.status)}">${esc(STATUS_LABEL[e.status] || e.status)}${e.owner ? " · " + esc(e.owner) : ""}${e._pending ? " · saving" : ""}</span>` : "",
       e.reason ? `<span class="chip">${esc(e.reason)}</span>` : "",
+      (e.attendees || []).length ? `<span class="chip going" title="Who's going">Going: ${e.attendees.map((a) => esc(a.name) + (a.role && a.role !== "Attendee" ? ` (${esc(a.role)})` : "")).join(", ")}</span>` : "",
+      (e.speakers || []).length ? `<span class="chip pitch" title="Who we're pitching as speaker">Speaker pitch: ${e.speakers.map(esc).join(", ")}${e.pitch ? " · " + esc(e.pitch) : ""}</span>` : "",
       `<span class="chip">${esc(CATEGORY[e.category] || e.category || "")}</span>`,
       e.speaker_opportunity ? `<span class="chip speaker" title="${esc(e.speaker_info)}">Speaker / sponsor slot</span>` : "",
       e.format && e.format !== "unknown" && e.format !== "in_person" ? `<span class="chip">${esc(e.format.replace("_", " "))}</span>` : "",
@@ -99,6 +102,7 @@
           ${e.team_note ? `<div class="note"><span class="mono">Note</span>${esc(e.team_note)}</div>` : ""}
           <div class="chips">${chips}</div>
           ${compact ? "" : reasonsRow(e)}
+          ${compact || isPast(e) ? "" : `<div class="plan" data-planpanel="${esc(e.id)}" ${state.openPlan === e.id ? "" : "hidden"}>${state.openPlan === e.id ? planInner(e.id) : ""}</div>`}
           ${sources.length && !compact ? `<details class="sources"><summary>${sources.length} source${sources.length > 1 ? "s" : ""}</summary>${sources.map((s) => `<div><a href="${esc(s)}" target="_blank" rel="noopener">${esc(s)}</a></div>`).join("")}</details>` : ""}
         </div>
         ${compact ? "" : `<div class="side">
@@ -127,6 +131,7 @@
     return `<div class="acts">
       <button class="act yes" data-flag="interested" data-id="${id}" aria-pressed="${isInterested(e)}" title="Flag interest: keeps it on the list and teaches the scanner to find more like it">Interested</button>
       <button class="act no" data-pass="${id}" aria-pressed="${e.status === "skip"}" aria-expanded="false" title="Hide it for everyone and teach the scanner to avoid similar ones">Pass</button>
+      <button class="act plan-btn" data-plan="${id}" aria-expanded="${state.openPlan === e.id}" title="Choose who goes, in what role, and who we pitch as speaker">Plan${(e.attendees || []).length ? ` · ${e.attendees.length}` : ""}</button>
     </div>`;
   }
   function reasonsRow(e) {
@@ -148,29 +153,120 @@
       const f = p[e.id];
       if (!f) continue;
       if (f.at < cutoff || e.status === f.status) { delete p[e.id]; continue; }
-      e.status = f.status; e.reason = f.reason || e.reason; e._pending = true;
+      const { at, ...fields } = f;
+      Object.assign(e, fields, { _pending: true });
     }
     writePending(p);
   }
 
+  const findEvent = (id) => [...state.events, ...state.hackathons].find((x) => x.id === id);
+  const fmtAttendees = (list) => list.map((a) => `${a.name} (${a.role || "Attendee"})`).join(", ");
+
   function flag(id, status, reason = "") {
-    const e = [...state.events, ...state.hackathons].find((x) => x.id === id);
+    const e = findEvent(id);
     if (!e) return;
     // clicking an active flag again clears it
-    if ((status === "interested" && isInterested(e)) || (status === e.status && !reason)) status = "new";
-    const p = readPending(); p[id] = { status, reason, at: Date.now() }; writePending(p);
-    Object.assign(e, { status, reason, _pending: true });
+    if ((status === "interested" && isInterested(e)) || (status === e.status && !reason)) {
+      if ((e.attendees || []).length) { toast("People are going to this one. Remove them under Plan first."); return; }
+      status = "new";
+    }
+    submit(e, { status, reason }, status === "skip" ? "Hidden" : "Flagged");
+  }
+
+  // Saves a change locally, then opens the pre-filled GitHub issue that saves it for the team.
+  function submit(e, fields, verb) {
+    const p = readPending(); p[e.id] = { ...fields, at: Date.now() }; writePending(p);
+    Object.assign(e, fields, { _pending: true });
     rerender();
 
     const repo = state.meta.repo;
     if (!repo) { toast("Saved in this browser only (no GitHub repo configured)"); return; }
-    const title = `[triage] ${status} · ${e.name}`.slice(0, 180);
-    const body = [`id: ${e.id}`, `status: ${status}`, `reason: ${reason}`, `note: `, "",
+    const lines = [`id: ${e.id}`, `status: ${fields.status}`];
+    if ("reason" in fields) lines.push(`reason: ${fields.reason || ""}`);
+    if ("attendees" in fields) lines.push(`attendees: ${fmtAttendees(fields.attendees)}`);
+    if ("speakers" in fields) lines.push(`speakers: ${fields.speakers.join(", ")}`);
+    if ("pitch" in fields) lines.push(`pitch: ${fields.pitch || ""}`);
+    lines.push("note: ", "",
       "<!-- Click 'Create' to save this for the whole team. The triage bot updates data/triage.yaml",
-      "     and republishes the dashboard in about a minute. You can add a note above. -->"].join("\n");
-    const url = `https://github.com/${repo}/issues/new?` + new URLSearchParams({ title, body, labels: "triage" });
+      "     and republishes the dashboard in about a minute. You can add a note above. -->");
+    const title = `[triage] ${fields.status} · ${e.name}`.slice(0, 180);
+    const url = `https://github.com/${repo}/issues/new?` + new URLSearchParams({ title, body: lines.join("\n"), labels: "triage" });
     window.open(url, "_blank", "noopener");
-    toast(status === "skip" ? "Hidden. Click Create on GitHub to save it for the team" : "Flagged. Click Create on GitHub to save it for the team");
+    toast(`${verb}. Click Create on GitHub to save it for the team`);
+  }
+
+  // ---------------------------------------------------------------- plan: who goes, as what, who we pitch
+  function draftFor(id) {
+    if (!state.drafts[id]) {
+      const e = findEvent(id) || {};
+      state.drafts[id] = {
+        attendees: (e.attendees || []).map((a) => ({ ...a })),
+        speakers: [...(e.speakers || [])],
+        pitch: e.pitch || "",
+      };
+    }
+    return state.drafts[id];
+  }
+
+  function planInner(id) {
+    const d = draftFor(id), t = state.team;
+    const going = new Map(d.attendees.map((a) => [a.name, a.role]));
+    const people = (t.team || []).map((p) => `
+      <button class="person" data-person="${esc(p.name)}" data-id="${esc(id)}" aria-pressed="${going.has(p.name)}"${p.title ? ` title="${esc(p.title)}"` : ""}>${esc(p.name)}</button>`).join("");
+    const roles = d.attendees.map((a) => `
+      <label class="role"><span>${esc(a.name)}</span>
+        <select data-role-for="${esc(a.name)}" data-id="${esc(id)}">
+          ${(t.roles || ["Attendee"]).map((r) => `<option${r === a.role ? " selected" : ""}>${esc(r)}</option>`).join("")}
+        </select></label>`).join("");
+    const speakers = (t.team || []).filter((p) => p.speaker).map((p) => `
+      <button class="person" data-speaker="${esc(p.name)}" data-id="${esc(id)}" aria-pressed="${d.speakers.includes(p.name)}">${esc(p.name)}</button>`).join("");
+    const pitch = `<select data-pitch="${esc(id)}" aria-label="Pitch status">
+        <option value="">Pitch status</option>
+        ${(t.pitch_statuses || []).map((s) => `<option${s === d.pitch ? " selected" : ""}>${esc(s)}</option>`).join("")}
+      </select>`;
+    return `
+      <div class="plan-sec">
+        <div class="plan-head"><span class="mono">Who's going</span><span class="hint">${d.attendees.length ? `${d.attendees.length} selected` : "Pick one or more"}</span></div>
+        <div class="people">${people}</div>
+        ${roles ? `<div class="roles">${roles}</div>` : ""}
+      </div>
+      <div class="plan-sec">
+        <div class="plan-head"><span class="mono">Pitch as speaker</span>${pitch}</div>
+        <div class="people">${speakers}</div>
+      </div>
+      <div class="plan-foot">
+        <button class="btn" data-plan-cancel="${esc(id)}">Cancel</button>
+        <button class="pill primary" data-plan-save="${esc(id)}">Save plan</button>
+      </div>`;
+  }
+
+  function refreshPlan(id) {
+    const el = document.querySelector(`[data-planpanel="${CSS.escape(id)}"]`);
+    if (el) el.innerHTML = planInner(id);
+  }
+
+  function togglePlan(id) {
+    state.openPlan = state.openPlan === id ? null : id;
+    delete state.drafts[id];
+    rerender();
+  }
+
+  function savePlan(id) {
+    const e = findEvent(id), d = draftFor(id);
+    if (!e) return;
+    // someone going → attending; only a speaker pitch → at least interested; nobody → back to interested
+    let status = e.status;
+    if (d.attendees.length) status = "attending";
+    else if (d.speakers.length && !isInterested(e)) status = "interested";
+    else if (!d.attendees.length && status === "attending") status = "interested";
+    state.openPlan = null; delete state.drafts[id];
+    submit(e, { status, attendees: d.attendees, speakers: d.speakers, pitch: d.speakers.length ? d.pitch : "" }, "Plan saved");
+  }
+
+  function fillPersonFilter() {
+    const sel = $("#f-person");
+    if (!sel) return;
+    sel.innerHTML = `<option value="">Anyone</option>` + (state.team.team || []).map((p) => `<option>${esc(p.name)}</option>`).join("");
   }
 
   function rerender() {
@@ -180,7 +276,7 @@
   }
 
   // ---------------------------------------------------------------- events tab
-  const FILTERS = ["q", "f-category", "f-country", "f-status", "f-min", "f-speaker", "f-new", "f-past"];
+  const FILTERS = ["q", "f-category", "f-country", "f-status", "f-person", "f-min", "f-speaker", "f-new", "f-past"];
   function saveFilters() {
     try {
       const v = Object.fromEntries(FILTERS.map((id) => { const el = $("#" + id); return [id, el.type === "checkbox" ? el.checked : el.value]; }));
@@ -200,7 +296,7 @@
 
   function renderEvents() {
     const q = $("#q").value.trim().toLowerCase();
-    const cat = $("#f-category").value, country = $("#f-country").value, status = $("#f-status").value;
+    const cat = $("#f-category").value, country = $("#f-country").value, status = $("#f-status").value, person = $("#f-person").value;
     const min = +$("#f-min").value, speaker = $("#f-speaker").checked, onlyNew = $("#f-new").checked, past = $("#f-past").checked;
     $("#f-min-out").textContent = min;
 
@@ -220,6 +316,7 @@
       if (!status && e.status === "skip") return false;
       if ((Number(e.relevance) || 0) < min && !isInterested(e)) return false;
       if (speaker && !e.speaker_opportunity) return false;
+      if (person && !(e.attendees || []).some((a) => a.name === person) && !(e.speakers || []).includes(person)) return false;
       if (onlyNew && !isNew(e)) return false;
       if (q && ![e.name, e.organiser, e.city, e.country, e.audience, e.why_relevant].join(" ").toLowerCase().includes(q)) return false;
       return true;
@@ -388,9 +485,38 @@
   $$("#hack-region button").forEach((b) => b.addEventListener("click", () => setRegion(b.dataset.region)));
   $$("#record-view button").forEach((b) => b.addEventListener("click", () => setRecordView(b.dataset.view)));
   FILTERS.forEach((id) => $("#" + id).addEventListener("input", () => { renderEvents(); saveFilters(); }));
+  document.addEventListener("change", (ev) => {
+    const role = ev.target.closest("[data-role-for]");
+    if (role) {
+      const a = draftFor(role.dataset.id).attendees.find((x) => x.name === role.dataset.roleFor);
+      if (a) a.role = role.value;
+    }
+    const pitch = ev.target.closest("[data-pitch]");
+    if (pitch) draftFor(pitch.dataset.pitch).pitch = pitch.value;
+  });
   document.addEventListener("click", (ev) => {
     const f = ev.target.closest("[data-flag]");
     if (f) { flag(f.dataset.id, f.dataset.flag, f.dataset.reason || ""); return; }
+    const planBtn = ev.target.closest("[data-plan]");
+    if (planBtn) { togglePlan(planBtn.dataset.plan); return; }
+    const person = ev.target.closest("[data-person]");
+    if (person) {
+      const d = draftFor(person.dataset.id), name = person.dataset.person;
+      const i = d.attendees.findIndex((a) => a.name === name);
+      if (i >= 0) d.attendees.splice(i, 1); else d.attendees.push({ name, role: "Attendee" });
+      refreshPlan(person.dataset.id); return;
+    }
+    const spk = ev.target.closest("[data-speaker]");
+    if (spk) {
+      const d = draftFor(spk.dataset.id), name = spk.dataset.speaker;
+      d.speakers = d.speakers.includes(name) ? d.speakers.filter((n) => n !== name) : [...d.speakers, name];
+      if (d.speakers.length && !d.pitch) d.pitch = (state.team.pitch_statuses || [])[0] || "";
+      refreshPlan(spk.dataset.id); return;
+    }
+    const save = ev.target.closest("[data-plan-save]");
+    if (save) { savePlan(save.dataset.planSave); return; }
+    const cancel = ev.target.closest("[data-plan-cancel]");
+    if (cancel) { togglePlan(cancel.dataset.planCancel); return; }
     const pass = ev.target.closest("[data-pass]");
     if (pass) {
       const row = document.querySelector(`[data-reasons="${CSS.escape(pass.dataset.pass)}"]`);

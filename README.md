@@ -7,7 +7,7 @@ this repo and publishes a dashboard on GitHub Pages. The dashboard has four tabs
 **Hackathons** (by university), **Track record** (where we went and where we didn't) and **Scan log**.
 
 ```
-config/        what to look for: profile.md (who we are), searches.yaml (search groups), universities.yaml (tracked universities)
+config/        profile.md (who we are), searches.yaml (search groups), universities.yaml, team.yaml (people, roles, speakers)
 scanner/       scan.py (daily research + extraction), build.py (builds the site), ids.py
 data/          output, committed by the bot: events.json, hackathons.json, runs.json
                edited by the team: triage.yaml (decisions), manual.yaml (hand-added events)
@@ -52,6 +52,14 @@ It does not log in to LinkedIn or scrape it.
   - The `Triage flag` workflow writes it to `data/triage.yaml`, closes the issue and republishes in about a minute.
   - Only the repo owner, collaborators and org members can save flags, so add teammates under Settings → Collaborators.
     They need GitHub accounts.
+- **Plan who goes.** **Plan** on a card opens a panel:
+  - Pick one or more people from `config/team.yaml`, each with a role: Attendee, Speaker, Panelist, Booth / sponsor,
+    Judge, Mentor or Recruiting.
+  - Pick who we're pitching as speaker (John, Niosha, Andreas, Mads or Thibault) and where the pitch stands:
+    to pitch, pitched, accepted or declined.
+  - Saving marks the event as attending. Who's going and the speaker pitch show on the card and in the calendar feed.
+  - The **Anyone** filter shows everything one person is going to or pitched for.
+  - To change the team or the speaker pool, edit `config/team.yaml`. Only names, titles and roles are published, never emails.
 - **Passed events disappear** from Events and Hackathons for everyone. The Track record tab still lists them under "We didn't".
 - **It learns.** Each morning the scanner reads `triage.yaml`. Events marked interested or attended become examples
   of "more like this". Passes, with their reasons, become "avoid these and anything similar". Both feed into the

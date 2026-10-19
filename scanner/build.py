@@ -52,7 +52,11 @@ def ics(events: list[dict], name: str) -> str:
             continue
         start = dt.date.fromisoformat(e["start_date"])
         end = dt.date.fromisoformat(e.get("end_date") or e["start_date"]) + dt.timedelta(days=1)
-        desc = " · ".join(x for x in [e.get("organiser"), e.get("why_relevant"), e.get("url")] if x)
+        going = ", ".join(f"{a['name']} ({a.get('role', 'Attendee')})" for a in e.get("attendees") or [])
+        pitch = ", ".join(e.get("speakers") or [])
+        desc = " · ".join(x for x in [
+            f"Going: {going}" if going else "", f"Speaker pitch: {pitch} ({e.get('pitch') or 'to pitch'})" if pitch else "",
+            e.get("organiser"), e.get("why_relevant"), e.get("url")] if x)
         lines += [
             "BEGIN:VEVENT",
             f"UID:{e['id']}@benford-events",
@@ -99,6 +103,9 @@ def main() -> int:
         e["leads"] = t.get("leads", e.get("leads"))
         e["rating"] = t.get("rating", e.get("rating"))
         e["reason"] = t.get("reason", e.get("reason", ""))
+        e["attendees"] = t.get("attendees", e.get("attendees", []))
+        e["speakers"] = t.get("speakers", e.get("speakers", []))
+        e["pitch"] = t.get("pitch", e.get("pitch", ""))
 
     key = lambda x: (x.get("start_date") or "9999", x.get("name", ""))
     events.sort(key=key)
@@ -118,6 +125,12 @@ def main() -> int:
     dump("hackathons.json", hackathons)
     dump("universities.json", load_yaml(CONFIG / "universities.yaml").get("universities", []))
     dump("runs.json", load_json(DATA / "runs.json", []))
+    team = load_yaml(CONFIG / "team.yaml")
+    dump("team.json", {  # names only: the site is public, so no emails
+        "team": [{"name": p["name"], "title": p.get("title", ""), "speaker": bool(p.get("speaker"))} for p in team.get("team", [])],
+        "roles": team.get("roles", ["Attendee"]),
+        "pitch_statuses": team.get("pitch_statuses", []),
+    })
     dump("meta.json", {
         "built_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "repo": repo,

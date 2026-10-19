@@ -1,0 +1,43 @@
+# Benford team, used for the "Plan" panel on each event (who goes, in what role, who we pitch as speaker).
+# Pulled from Slack (@benford.tech accounts) on 2026-10-19. Edit freely; names must be unique.
+#
+# speaker: true  → shows up in "Pitch as speaker"
+
+roles:          # what someone can go as
+  - Attendee
+  - Speaker
+  - Panelist
+  - Booth / sponsor
+  - Judge
+  - Mentor
+  - Recruiting
+
+pitch_statuses: # where the speaker pitch stands
+  - To pitch
+  - Pitched
+  - Accepted
+  - Declined
+
+team:
+  - {name: John, email: john@benford.tech, speaker: true}
+  - {name: Niosha, email: niosha@benford.tech, title: "Partner, Audit", speaker: true}
+  - {name: Andreas, email: andreas@benford.tech, speaker: true}
+  - {name: Mads, email: mads@benford.tech, title: Junior Audit Associate, speaker: true}
+  - {name: Thibault, email: thibault@benford.tech, title: Junior Full-Stack Dev, speaker: true}
+  - {name: Benedetta, email: benedetta@benford.tech}
+  - {name: Alexander, email: alexander@benford.tech, title: Deployment Strategist}
+  - {name: Bent, email: bent@benford.tech}
+  - {name: Eirik L, email: eirik@benford.tech}
+  - {name: Eirik M, email: eirik.m@benford.tech}
+  - {name: Felix, email: felix@benford.tech}
+  - {name: Henrik, email: henrik@benford.tech}
+  - {name: Jørgen, email: jorgen@benford.tech}
+  - {name: Kristian, email: kristian@benford.tech}
+  - {name: Lise, email: lise@benford.tech, title: Deployment Strategist Intern}
+  - {name: Muhtasim, email: muhtasim@benford.tech, title: Software Engineer / Audit Intern}
+  - {name: Noah, email: noah@benford.tech}
+  - {name: Simon, email: simon@benford.tech}
+  - {name: Svi, email: svi@benford.tech, title: Auditor}
+  - {name: Toby, email: toby@benford.tech}
+  - {name: Vegard, email: vegard@benford.tech}
+  - {name: Yngve, email: yngve@benford.tech}

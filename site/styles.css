@@ -192,6 +192,31 @@ details.sources a { word-break: break-all; color: var(--ink-2); }
 .chip-btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .chip.interested, .chip.shortlisted, .chip.attending { background: var(--green-soft); color: var(--green); }
 
+/* plan panel: who goes, as what, who we pitch */
+.act.plan-btn { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.act.plan-btn[aria-expanded="true"] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.plan { margin-top: 14px; padding: 16px; border-radius: 14px; background: var(--pill); display: grid; gap: 16px; }
+.plan-sec { display: grid; gap: 10px; }
+.plan-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.plan-head .mono { color: var(--ink); }
+.plan-head select, .role select {
+  font: 13px var(--sans); height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink);
+}
+.people { display: flex; flex-wrap: wrap; gap: 6px; }
+.person {
+  font: 500 13px var(--sans); height: 30px; padding: 0 12px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+}
+.person:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 25%, transparent); }
+.person[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.roles { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; border-top: 1px solid var(--line); }
+.role { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding-top: 8px; }
+.role span { font-weight: 500; }
+.plan-foot { display: flex; justify-content: flex-end; gap: 8px; }
+.chip.going { background: var(--green); color: var(--green-ink); }
+.chip.pitch { background: var(--lime); color: var(--lime-ink); }
+
 /* ------------------------------------------------ hackathons */
 .map-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--pill); }
