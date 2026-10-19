@@ -46,13 +46,12 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Triage: $SUMMARY"
           for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 3; done
+      # Close without a comment: GitHub emails the author for each comment, so this keeps it to one email.
       - name: Close issue
         env:
           GH_TOKEN: ${{ github.token }}
-          SUMMARY: ${{ steps.apply.outputs.summary }}
           NUMBER: ${{ github.event.issue.number }}
-        run: |
-          gh issue close "$NUMBER" -R "$GITHUB_REPOSITORY" -c "Saved: $SUMMARY. The dashboard updates in about a minute."
+        run: gh issue close "$NUMBER" -R "$GITHUB_REPOSITORY"
 
   publish:
     needs: apply
