@@ -30,8 +30,8 @@
 
     const last = state.runs[0];
     $("#last-scan").textContent = last
-      ? `Last scan ${fmtDateTime(last.finished_at)} · ${last.new} new · rescans every morning`
-      : "No scan has run yet";
+      ? `CFO events, audit and accounting conferences, speaker calls and university hackathons across London and Norway. Last scanned ${fmtDateTime(last.finished_at)}, ${last.new} new.`
+      : "CFO events, audit and accounting conferences, speaker calls and university hackathons across London and Norway. Refreshed every morning.";
     $("#demo-banner").hidden = !state.meta.demo;
     if (state.meta.manual_edit_url) {
       const a = $("#add-event");
@@ -94,13 +94,13 @@
           <h3>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(e.name)}</a>` : esc(e.name)}</h3>
           <div class="meta">${esc(dateRange(e))}${where ? " · " + esc(where) : ""}${e.organiser ? " · " + esc(e.organiser) : ""}</div>
           ${e.why_relevant && !compact ? `<div class="why">${esc(e.why_relevant)}</div>` : ""}
-          ${e.speaker_info && !compact ? `<div class="meta">🎤 ${esc(e.speaker_info)}</div>` : ""}
-          ${e.team_note ? `<div class="meta">📝 ${esc(e.team_note)}</div>` : ""}
+          ${e.speaker_info && !compact ? `<div class="note"><span class="mono">Speak</span>${esc(e.speaker_info)}</div>` : ""}
+          ${e.team_note ? `<div class="note"><span class="mono">Note</span>${esc(e.team_note)}</div>` : ""}
           <div class="chips">${chips}</div>
           ${sources.length && !compact ? `<details class="sources"><summary>${sources.length} source${sources.length > 1 ? "s" : ""}</summary>${sources.map((s) => `<div><a href="${esc(s)}" target="_blank" rel="noopener">${esc(s)}</a></div>`).join("")}</details>` : ""}
         </div>
         ${compact ? "" : `<div class="side">
-          <span class="fit ${fitCls}" title="Fit for Benford (0–100)">${fit}</span>
+          <span class="fit ${fitCls}" title="Fit for Benford (0–100)"><b>${fit}</b><span>fit</span></span>
           <button class="btn" data-copy="${esc(e.id)}" title="Copy a line for data/triage.yaml">Triage…</button>
         </div>`}
       </article>`;
@@ -137,7 +137,7 @@
       [upcoming.filter(isNew).length, "new this week"],
       [upcoming.filter((e) => e.speaker_opportunity).length, "speaker / sponsor slots"],
       [upcoming.filter((e) => e.status === "attending").length, "we're attending"],
-    ].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("");
+    ].map(([n, l], i) => `<div class="stat${i === 3 ? " accent" : ""}"><b>${n}</b><span class="mono">${l}</span></div>`).join("");
 
     const list = state.events.filter((e) => {
       if (!past && isPast(e)) return false;
@@ -239,7 +239,7 @@
   // ---------------------------------------------------------------- runs tab
   function renderRuns() {
     if (!state.runs.length) { $("#runs").innerHTML = `<div class="empty">No scans yet.</div>`; return; }
-    $("#runs").innerHTML = `<table><thead><tr><th>Finished</th><th>New</th><th>Source</th><th>Groups</th><th>Errors</th></tr></thead><tbody>${
+    $("#runs").innerHTML = `<div class="table-wrap"><table><thead><tr><th>Finished</th><th>New</th><th>Source</th><th>Groups</th><th>Errors</th></tr></thead><tbody>${
       state.runs.map((r) => `<tr>
         <td>${esc(fmtDateTime(r.finished_at))}</td>
         <td class="num">${esc(r.new)}</td>
@@ -247,7 +247,7 @@
         <td>${esc((r.groups || []).join(", "))}</td>
         <td>${(r.errors || []).map((e) => `<div class="err">${esc(e.group)}: ${esc(e.error)}</div>`).join("") || "—"}</td>
       </tr>`).join("")
-    }</tbody></table>`;
+    }</tbody></table></div>`;
   }
 
   // ---------------------------------------------------------------- triage copy

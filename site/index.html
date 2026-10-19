@@ -4,43 +4,49 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Benford Events Radar</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Libre+Caslon+Text:wght@400;700&family=Roboto+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="top">
-    <div class="wrap top-inner">
-      <div>
-        <h1>Events Radar</h1>
-        <p class="sub" id="last-scan">Loading…</p>
-      </div>
-      <nav class="links">
-        <a href="calendar/team.ics" title="Subscribe in Google Calendar / Outlook">Team calendar</a>
-        <a href="calendar/radar.ics">Radar calendar</a>
-        <a href="api/events.json">API</a>
-        <a id="add-event" href="#" hidden>+ Add event</a>
-      </nav>
-    </div>
-    <div class="wrap">
-      <div class="tabs" role="tablist">
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="https://benford.tech" target="_blank" rel="noopener" aria-label="Benford">
+        <span class="mark" aria-hidden="true"></span><span class="wordmark">BENFORD</span>
+      </a>
+      <nav class="tabs" role="tablist" aria-label="Sections">
         <button role="tab" data-tab="events" aria-selected="true">Events</button>
-        <button role="tab" data-tab="hackathons" aria-selected="false">University hackathons</button>
+        <button role="tab" data-tab="hackathons" aria-selected="false">Hackathons</button>
         <button role="tab" data-tab="runs" aria-selected="false">Scan log</button>
+      </nav>
+      <div class="nav-actions">
+        <a class="pill ghost hide-sm" href="calendar/team.ics" title="Subscribe in Google Calendar or Outlook">Calendar</a>
+        <a class="pill ghost hide-sm" href="api/events.json">API</a>
+        <a class="pill primary" id="add-event" href="#" hidden>Add event</a>
       </div>
     </div>
   </header>
 
-  <div id="demo-banner" class="wrap banner" hidden>
-    Demo data. The first morning scan hasn't run yet, so these entries are placeholders.
-  </div>
+  <section class="hero wrap">
+    <p class="eyebrow">Benford · Events radar</p>
+    <h1 id="hero-title">Where we should be next</h1>
+    <p class="lede" id="last-scan">Loading…</p>
+    <div id="demo-banner" class="banner" hidden>
+      Demo data. The first morning scan hasn't run yet, so these entries are placeholders.
+    </div>
+  </section>
 
   <main class="wrap">
     <!-- EVENTS -->
     <section id="tab-events" class="tab">
       <div class="stats" id="stats"></div>
+
       <div class="filters">
-        <input id="q" type="search" placeholder="Search events, organisers, cities…">
-        <select id="f-category">
+        <input id="q" type="search" placeholder="Search events, organisers, cities">
+        <select id="f-category" aria-label="Category">
           <option value="">All categories</option>
           <option value="cfo">CFO &amp; finance leaders</option>
           <option value="audit_accounting">Audit &amp; accounting</option>
@@ -48,13 +54,13 @@
           <option value="founders_investors">Founders &amp; investors</option>
           <option value="other">Other</option>
         </select>
-        <select id="f-country">
-          <option value="">UK + Norway + other</option>
+        <select id="f-country" aria-label="Country">
+          <option value="">UK, Norway &amp; elsewhere</option>
           <option value="uk">UK</option>
           <option value="norway">Norway</option>
           <option value="other">Elsewhere</option>
         </select>
-        <select id="f-status">
+        <select id="f-status" aria-label="Status">
           <option value="">Any status</option>
           <option value="new">Not triaged</option>
           <option value="attending">Attending</option>
@@ -62,10 +68,12 @@
           <option value="maybe">Maybe</option>
           <option value="skip">Skipped</option>
         </select>
-        <label class="range">Min fit <input id="f-min" type="range" min="0" max="100" step="5" value="40"><output id="f-min-out">40</output></label>
-        <label class="check"><input id="f-speaker" type="checkbox"> Speaker slots</label>
-        <label class="check"><input id="f-new" type="checkbox"> New this week</label>
-        <label class="check"><input id="f-past" type="checkbox"> Show past</label>
+        <label class="range"><span class="mono">Min fit</span><input id="f-min" type="range" min="0" max="100" step="5" value="40"><output id="f-min-out">40</output></label>
+        <div class="toggles">
+          <label class="toggle"><input id="f-speaker" type="checkbox"><span>Speaker slots</span></label>
+          <label class="toggle"><input id="f-new" type="checkbox"><span>New this week</span></label>
+          <label class="toggle"><input id="f-past" type="checkbox"><span>Show past</span></label>
+        </div>
       </div>
       <div id="event-list"></div>
     </section>
@@ -91,6 +99,11 @@
       <div id="runs"></div>
     </section>
   </main>
+
+  <footer class="wrap foot">
+    <span class="mono">Benford Technologies · London &amp; Oslo</span>
+    <span class="mono">Scans every morning at 05:30 UTC</span>
+  </footer>
 
   <div id="toast" role="status" aria-live="polite"></div>
 
