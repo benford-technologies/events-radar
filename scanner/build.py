@@ -130,7 +130,9 @@ def main() -> int:
         "team": [{"name": p["name"], "title": p.get("title", ""), "speaker": bool(p.get("speaker"))} for p in team.get("team", [])],
         "roles": team.get("roles", ["Attendee"]),
         "pitch_statuses": team.get("pitch_statuses", []),
+        "admins": team.get("admins", []),
     })
+    dump("pitches.json", load_json(DATA / "pitches.json", {}))
     dump("meta.json", {
         "built_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "repo": repo,

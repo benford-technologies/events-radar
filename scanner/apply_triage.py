@@ -71,17 +71,29 @@ def find_name(event_id: str) -> str:
     return ""
 
 
-def main() -> int:
-    f = parse(os.environ.get("ISSUE_BODY", ""))
+def write_entry(event_id: str, entry: dict | None) -> None:
+    """Replace this id's line in triage.yaml (None removes it); every other line and comment stays as it was."""
+    text = TRIAGE.read_text() if TRIAGE.exists() else ""
+    lines = [l for l in text.splitlines() if not re.match(rf"^{re.escape(event_id)}\s*:", l)]
+    if entry is not None:
+        name = find_name(event_id).replace("\n", " ").replace("#", "")
+        lines.append(f"{event_id}: {json.dumps(entry, ensure_ascii=False)}" + (f"  # {name}" if name else ""))
+    TRIAGE.write_text("\n".join(lines).rstrip() + "\n")
+
+
+def read_entry(event_id: str) -> dict:
+    text = TRIAGE.read_text() if TRIAGE.exists() else ""
+    return dict((yaml.safe_load(text) or {}).get(event_id) or {})
+
+
+def apply(body: str, user: str) -> tuple[str, str, dict]:
+    """Apply one triage issue. Returns (summary, event id, entry). Raises ValueError on a bad body."""
+    f = parse(body)
     event_id, status = f.get("id", ""), f.get("status", "").lower()
     if not re.fullmatch(r"[a-z0-9]{6,20}", event_id) or status not in STATUSES:
-        print(f"invalid triage issue: id={event_id!r} status={status!r}")
-        return 1
+        raise ValueError(f"invalid triage issue: id={event_id!r} status={status!r}")
 
-    text = TRIAGE.read_text() if TRIAGE.exists() else ""
-    existing = (yaml.safe_load(text) or {}).get(event_id) or {}
-
-    entry = dict(existing)
+    entry = read_entry(event_id)
     entry["status"] = status
     for key, limit in (("reason", 80), ("note", 500), ("owner", 60)):
         if f.get(key):
@@ -92,18 +104,24 @@ def main() -> int:
         if (f.get(key) or "").isdigit():
             entry[key] = int(f[key])
     parse_plan(f, entry)
-    entry["by"] = os.environ.get("ISSUE_USER", "")[:40]
+    entry["by"] = user[:40]
     entry["on"] = dt.date.today().isoformat()
 
-    # Replace this id's line, keep every other line (and comments) as they were.
-    lines = [l for l in text.splitlines() if not re.match(rf"^{re.escape(event_id)}\s*:", l)]
-    if status != "new":
-        name = find_name(event_id).replace("\n", " ").replace("#", "")
-        lines.append(f"{event_id}: {json.dumps(entry, ensure_ascii=False)}" + (f"  # {name}" if name else ""))
-    TRIAGE.write_text("\n".join(lines).rstrip() + "\n")
+    write_entry(event_id, entry if status != "new" else None)
     going = ", ".join(a["name"] for a in entry.get("attendees", []))
-    print(f"{event_id} → {status}" + (f" ({entry['reason']})" if entry.get("reason") else "")
-          + (f", going: {going}" if going else "") + (f", speaker pitch: {', '.join(entry['speakers'])}" if entry.get("speakers") else ""))
+    summary = (f"{event_id} → {status}" + (f" ({entry['reason']})" if entry.get("reason") else "")
+               + (f", going: {going}" if going else "")
+               + (f", speaker pitch: {', '.join(entry['speakers'])}" if entry.get("speakers") else ""))
+    return summary, event_id, entry
+
+
+def main() -> int:
+    try:
+        summary, _, _ = apply(os.environ.get("ISSUE_BODY", ""), os.environ.get("ISSUE_USER", ""))
+    except ValueError as exc:
+        print(exc)
+        return 1
+    print(summary)
     return 0
 
 

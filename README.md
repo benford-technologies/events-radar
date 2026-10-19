@@ -8,8 +8,9 @@ this repo and publishes a dashboard on GitHub Pages. The dashboard has four tabs
 
 ```
 config/        profile.md (who we are), searches.yaml (search groups), universities.yaml, team.yaml (people, roles, speakers)
-scanner/       scan.py (daily research + extraction), build.py (builds the site), ids.py
-data/          output, committed by the bot: events.json, hackathons.json, runs.json
+scanner/       scan.py (daily research + extraction), build.py (site), bot.py (handles dashboard buttons),
+               add_event.py, pitch.py, apply_triage.py, ids.py
+data/          output, committed by the bot: events.json, hackathons.json, runs.json, pitches.json
                edited by the team: triage.yaml (decisions), manual.yaml (hand-added events)
 site/          the dashboard (static HTML/JS, no build step)
 .github/       daily-scan.yml: cron 05:30 UTC → scan → commit → publish to Pages
@@ -60,6 +61,16 @@ It does not log in to LinkedIn or scrape it.
   - Saving marks the event as attending. Who's going and the speaker pitch show on the card and in the calendar feed.
   - The **Anyone** filter shows everything one person is going to or pitched for.
   - To change the team or the speaker pool, edit `config/team.yaml`. Only names, titles and roles are published, never emails.
+- **Add an event from a link.** Click **Add event** and paste a link: a LinkedIn post, event page, Luma or Eventbrite.
+  For LinkedIn, also paste the post text, because LinkedIn often hides posts from bots. The bot reads the link,
+  falls back to the pasted text and a web search, adds the event flagged as interested, and republishes in about two minutes.
+  If it can't find an event, it closes the issue and says why.
+- **Speaker pitch emails.** When a plan pitches someone as speaker, the bot drafts a short first-person email from
+  them to the organiser, and looks up the speaker-programme contact if it's published. Open it with **Pitch emails** on the card.
+  - **Open in Gmail** opens the draft in the sender's own Gmail to review and send. Nothing is sent automatically.
+  - **Save changes for the team** saves edits, but only for admins (`admins` in `config/team.yaml`) and that speaker.
+    People are matched by their GitHub username (`github:` in `team.yaml`).
+  - Add a `bio:` line per speaker in `team.yaml` to make the drafts more specific.
 - **Passed events disappear** from Events and Hackathons for everyone. The Track record tab still lists them under "We didn't".
 - **It learns.** Each morning the scanner reads `triage.yaml`. Events marked interested or attended become examples
   of "more like this". Passes, with their reasons, become "avoid these and anything similar". Both feed into the

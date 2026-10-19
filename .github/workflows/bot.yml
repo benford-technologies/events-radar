@@ -1,0 +1,87 @@
+name: Issue bot
+
+# Everything the dashboard's buttons send arrives as a pre-filled GitHub issue:
+#   [triage] …  Interested / Pass / We went / Plan (+ writes speaker pitch drafts)
+#   [add] …     add an event from a pasted link
+#   [pitch] …   edit a speaker pitch draft (admins + that speaker only, checked in scanner/pitch.py)
+# Only issues from the repo owner, collaborators or org members are handled (the repo is public).
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: issue-bot
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: >-
+      (startsWith(github.event.issue.title, '[triage]') ||
+       startsWith(github.event.issue.title, '[add]') ||
+       startsWith(github.event.issue.title, '[pitch]')) &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      ok: ${{ steps.run.outputs.ok }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scanner/requirements.txt
+      - run: pip install -r scanner/requirements.txt
+      - name: Handle request
+        id: run
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_USER: ${{ github.event.issue.user.login }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SCAN_MODEL: ${{ vars.SCAN_MODEL }}
+        run: |
+          set +e
+          out=$(python scanner/bot.py); code=$?
+          echo "$out"
+          { echo "summary<<EOF"; echo "$out" | tail -1; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          if [ $code -eq 0 ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+          exit 0
+      - name: Commit
+        if: steps.run.outputs.ok == 'true'
+        env:
+          SUMMARY: ${{ steps.run.outputs.summary }}
+        run: |
+          git config user.name "events-radar-bot"
+          git config user.email "events-radar-bot@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet && exit 0
+          git commit -m "Bot: $SUMMARY"
+          for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 3; done
+      # Success: close silently (each comment emails the author). Failure: say why.
+      - name: Close issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+          OK: ${{ steps.run.outputs.ok }}
+          SUMMARY: ${{ steps.run.outputs.summary }}
+        run: |
+          if [ "$OK" = "true" ]; then
+            gh issue close "$NUMBER" -R "$GITHUB_REPOSITORY"
+          else
+            gh issue close "$NUMBER" -R "$GITHUB_REPOSITORY" --reason "not planned" -c "Couldn't do this - $SUMMARY"
+          fi
+
+  publish:
+    needs: apply
+    if: needs.apply.outputs.ok == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/publish.yml

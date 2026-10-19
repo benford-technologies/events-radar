@@ -14,28 +14,26 @@
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
 
-  const state = { events: [], hackathons: [], universities: [], runs: [], meta: {}, region: "london", uni: null, recordView: "went", team: {}, drafts: {}, openPlan: null };
+  const state = { events: [], hackathons: [], universities: [], runs: [], meta: {}, region: "london", uni: null, recordView: "went", team: {}, drafts: {}, openPlan: null, pitches: {}, pitchFor: null };
 
   // ---------------------------------------------------------------- load
   async function load() {
     const get = (p) => fetch(p, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    const [events, hackathons, universities, runs, meta, team] = await Promise.all([
+    const [events, hackathons, universities, runs, meta, team, pitches] = await Promise.all([
       get("api/events.json"), get("api/hackathons.json"), get("api/universities.json"),
-      get("api/runs.json"), get("api/meta.json"), get("api/team.json"),
+      get("api/runs.json"), get("api/meta.json"), get("api/team.json"), get("api/pitches.json"),
     ]);
     Object.assign(state, {
       events: events || [], hackathons: hackathons || [], universities: universities || [],
-      runs: runs || [], meta: meta || {}, team: team || { team: [], roles: ["Attendee"], pitch_statuses: [] },
+      runs: runs || [], meta: meta || {}, team: team || { team: [], roles: ["Attendee"], pitch_statuses: [] }, pitches: pitches || {},
     });
     fillPersonFilter();
 
     const last = state.runs[0];
     state.scanNote = last ? ` Last scanned ${fmtDateTime(last.finished_at)}, ${last.new} new.` : " Refreshed every morning.";
     $("#demo-banner").hidden = !state.meta.demo;
-    if (state.meta.manual_edit_url) {
-      const a = $("#add-event");
-      a.href = state.meta.manual_edit_url; a.target = "_blank"; a.hidden = false;
-    }
+    if (state.meta.manual_edit_url) $("#add-manual").href = state.meta.manual_edit_url;
+    else $("#add-manual").hidden = true;
     applyPending();
     restoreFilters();
     renderEvents();
@@ -83,6 +81,7 @@
       e.reason ? `<span class="chip">${esc(e.reason)}</span>` : "",
       (e.attendees || []).length ? `<span class="chip going" title="Who's going">Going: ${e.attendees.map((a) => esc(a.name) + (a.role && a.role !== "Attendee" ? ` (${esc(a.role)})` : "")).join(", ")}</span>` : "",
       (e.speakers || []).length ? `<span class="chip pitch" title="Who we're pitching as speaker">Speaker pitch: ${e.speakers.map(esc).join(", ")}${e.pitch ? " · " + esc(e.pitch) : ""}</span>` : "",
+      (e.speakers || []).length && !compact ? `<button class="btn pitch-open" data-drafts="${esc(e.id)}">Pitch emails</button>` : "",
       `<span class="chip">${esc(CATEGORY[e.category] || e.category || "")}</span>`,
       e.speaker_opportunity ? `<span class="chip speaker" title="${esc(e.speaker_info)}">Speaker / sponsor slot</span>` : "",
       e.format && e.format !== "unknown" && e.format !== "in_person" ? `<span class="chip">${esc(e.format.replace("_", " "))}</span>` : "",
@@ -189,10 +188,91 @@
     lines.push("note: ", "",
       "<!-- Click 'Create' to save this for the whole team. The triage bot updates data/triage.yaml",
       "     and republishes the dashboard in about a minute. You can add a note above. -->");
-    const title = `[triage] ${fields.status} · ${e.name}`.slice(0, 180);
-    const url = `https://github.com/${repo}/issues/new?` + new URLSearchParams({ title, body: lines.join("\n"), labels: "triage" });
-    window.open(url, "_blank", "noopener");
+    openIssue(`[triage] ${fields.status} · ${e.name}`, lines.join("\n"));
     toast(`${verb}. Click Create on GitHub to save it for the team`);
+  }
+
+  function openIssue(title, body) {
+    const url = `https://github.com/${state.meta.repo}/issues/new?` + new URLSearchParams({ title: title.slice(0, 180), body });
+    window.open(url, "_blank", "noopener");
+  }
+
+  // ---------------------------------------------------------------- add event from a link
+  function openAdd() {
+    if (!state.meta.repo) { toast("Adding events needs the GitHub repo (works on the live site)"); return; }
+    $("#add-form").reset();
+    $("#add-dialog").returnValue = "";
+    $("#add-dialog").showModal();
+    $("#add-url").focus();
+  }
+  function submitAdd() {
+    const url = $("#add-url").value.trim(), text = $("#add-text").value.trim().slice(0, 4000);
+    if (!/^https?:\/\//i.test(url)) return;
+    let label = url;
+    try { const u = new URL(url); label = u.hostname.replace(/^www\./, "") + u.pathname.slice(0, 60); } catch {}
+    openIssue(`[add] ${label}`, [`url: ${url}`, "text:", text, "",
+      "<!-- Click 'Create'. The bot reads the link, adds the event to the radar (flagged interested)",
+      "     and republishes in about two minutes. If it can't find an event, it closes this issue with the reason. -->"].join("\n"));
+    toast("Click Create on GitHub. The event appears in about two minutes");
+  }
+
+  // ---------------------------------------------------------------- speaker pitch drafts
+  function openPitches(id, speaker) {
+    const e = findEvent(id);
+    if (!e) return;
+    state.pitchFor = { id, speaker: speaker || (e.speakers || [])[0] };
+    renderPitch();
+    if (!$("#pitch-dialog").open) $("#pitch-dialog").showModal();
+  }
+
+  function renderPitch() {
+    const { id, speaker } = state.pitchFor, e = findEvent(id);
+    const d = (state.pitches[id] || {})[speaker];
+    const admins = state.team.admins || [];
+    const who = [...new Set([...admins, speaker])];
+    const whoText = who.length > 1 ? `${who.slice(0, -1).join(", ")} and ${who[who.length - 1]}` : who[0];
+    $("#pitch-title").textContent = e.name;
+    const tabs = (e.speakers || []).map((s) =>
+      `<button type="button" class="person" data-pitch-tab="${esc(s)}" aria-pressed="${s === speaker}">${esc(s)}</button>`).join("");
+    if (!d) {
+      $("#pitch-body").innerHTML = `<div class="pitch-tabs">${tabs}</div>
+        <div class="pitch-empty">${esc(speaker)}'s draft is being written. It appears a minute or two after the plan is saved.
+        If it doesn't, check that the ANTHROPIC_API_KEY secret is set.</div>`;
+      return;
+    }
+    const meta = [d.generated_on ? `Drafted by Claude on ${esc(d.generated_on)}` : "",
+      d.edited_by ? `edited by @${esc(d.edited_by)} on ${esc(d.edited_on)}` : ""].filter(Boolean).join(" · ");
+    $("#pitch-body").innerHTML = `
+      <div class="pitch-tabs">${tabs}</div>
+      <p class="pitch-meta">${meta}. Only ${esc(whoText)} can save changes.</p>
+      <label class="field"><span class="mono">To</span>
+        <input id="pitch-to" type="email" value="${esc(d.to)}" placeholder="organiser@example.com (not published, add it if you have it)"></label>
+      <label class="field"><span class="mono">Subject</span><input id="pitch-subject" value="${esc(d.subject)}"></label>
+      <label class="field"><span class="mono">Email</span><textarea id="pitch-text" rows="12">${esc(d.body)}</textarea></label>
+      <div class="pitch-actions">
+        <button type="button" class="pill primary" data-pitch-gmail>Open in Gmail</button>
+        <button type="button" class="btn" data-pitch-copy>Copy</button>
+        <span class="grow"></span>
+        <button type="button" class="btn" data-pitch-save>Save changes for the team</button>
+      </div>`;
+  }
+
+  const pitchFields = () => ({ to: $("#pitch-to").value.trim(), subject: $("#pitch-subject").value.trim(), body: $("#pitch-text").value });
+
+  function pitchGmail() {
+    const f = pitchFields();
+    window.open("https://mail.google.com/mail/?view=cm&fs=1&" + new URLSearchParams({ to: f.to, su: f.subject, body: f.body }), "_blank", "noopener");
+  }
+  async function pitchCopy() {
+    const f = pitchFields();
+    try { await navigator.clipboard.writeText(`Subject: ${f.subject}\n\n${f.body}`); toast("Copied"); } catch { toast("Couldn't copy"); }
+  }
+  function pitchSave() {
+    const { id, speaker } = state.pitchFor, f = pitchFields(), e = findEvent(id);
+    ((state.pitches[id] = state.pitches[id] || {})[speaker] = { ...(state.pitches[id] || {})[speaker], ...f });
+    openIssue(`[pitch] ${speaker} · ${e.name}`, [`id: ${id}`, `speaker: ${speaker}`, `to: ${f.to}`, `subject: ${f.subject}`,
+      "---", f.body, "", "<!-- Click 'Create' to save. Only admins and the speaker can save edits to a pitch. -->"].join("\n"));
+    toast("Click Create on GitHub to save the edit");
   }
 
   // ---------------------------------------------------------------- plan: who goes, as what, who we pitch
@@ -485,6 +565,7 @@
   $$("#hack-region button").forEach((b) => b.addEventListener("click", () => setRegion(b.dataset.region)));
   $$("#record-view button").forEach((b) => b.addEventListener("click", () => setRecordView(b.dataset.view)));
   FILTERS.forEach((id) => $("#" + id).addEventListener("input", () => { renderEvents(); saveFilters(); }));
+  $("#add-dialog").addEventListener("close", () => { if ($("#add-dialog").returnValue === "add") submitAdd(); });
   document.addEventListener("change", (ev) => {
     const role = ev.target.closest("[data-role-for]");
     if (role) {
@@ -497,6 +578,14 @@
   document.addEventListener("click", (ev) => {
     const f = ev.target.closest("[data-flag]");
     if (f) { flag(f.dataset.id, f.dataset.flag, f.dataset.reason || ""); return; }
+    if (ev.target.closest("#add-event")) { openAdd(); return; }
+    const drafts = ev.target.closest("[data-drafts]");
+    if (drafts) { openPitches(drafts.dataset.drafts); return; }
+    const ptab = ev.target.closest("[data-pitch-tab]");
+    if (ptab) { openPitches(state.pitchFor.id, ptab.dataset.pitchTab); return; }
+    if (ev.target.closest("[data-pitch-gmail]")) { pitchGmail(); return; }
+    if (ev.target.closest("[data-pitch-copy]")) { pitchCopy(); return; }
+    if (ev.target.closest("[data-pitch-save]")) { pitchSave(); return; }
     const planBtn = ev.target.closest("[data-plan]");
     if (planBtn) { togglePlan(planBtn.dataset.plan); return; }
     const person = ev.target.closest("[data-person]");

@@ -25,7 +25,7 @@
       <div class="nav-actions">
         <a class="pill ghost hide-sm" href="calendar/team.ics" title="Subscribe in Google Calendar or Outlook">Calendar</a>
         <a class="pill ghost hide-sm" href="api/events.json">API</a>
-        <a class="pill primary" id="add-event" href="#" hidden>Add event</a>
+        <button class="pill primary" id="add-event" type="button">Add event</button>
       </div>
     </div>
   </header>
@@ -122,6 +122,36 @@
     <span class="mono">Benford Technologies · London &amp; Oslo</span>
     <span class="mono">Scans every morning at 05:30 UTC</span>
   </footer>
+
+  <!-- Add event from a link -->
+  <dialog id="add-dialog" class="dialog" aria-labelledby="add-title">
+    <form method="dialog" id="add-form">
+      <p class="eyebrow">Add event</p>
+      <h2 id="add-title">Paste a link to the event</h2>
+      <p class="hint">A LinkedIn post, event page, Luma, Eventbrite or meetup link. Claude reads it and fills in
+        the details, usually within two minutes.</p>
+      <label class="field"><span class="mono">Link</span>
+        <input id="add-url" type="url" placeholder="https://www.linkedin.com/posts/…" required></label>
+      <label class="field"><span class="mono">Post text (optional)</span>
+        <textarea id="add-text" rows="5" placeholder="LinkedIn often hides posts from bots. Paste the post text here to be safe."></textarea></label>
+      <div class="dialog-foot">
+        <a class="hint" id="add-manual" href="#" target="_blank" rel="noopener">or add one by hand</a>
+        <span class="grow"></span>
+        <button class="btn" value="cancel" formnovalidate>Cancel</button>
+        <button class="pill primary" id="add-submit" value="add">Add event</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Speaker pitch email drafts -->
+  <dialog id="pitch-dialog" class="dialog wide" aria-labelledby="pitch-title">
+    <form method="dialog">
+      <p class="eyebrow">Speaker pitch</p>
+      <h2 id="pitch-title"></h2>
+      <div id="pitch-body"></div>
+      <div class="dialog-foot"><span class="grow"></span><button class="btn" value="close">Close</button></div>
+    </form>
+  </dialog>
 
   <div id="toast" role="status" aria-live="polite"></div>
 

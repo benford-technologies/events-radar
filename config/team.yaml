@@ -2,6 +2,11 @@
 # Pulled from Slack (@benford.tech accounts) on 2026-10-19. Edit freely; names must be unique.
 #
 # speaker: true  → shows up in "Pitch as speaker"
+# github:        → their GitHub username. Needed to save edits to speaker pitch drafts
+#                  (only admins and the speaker themself can edit a speaker's draft).
+# bio:           → one or two lines the pitch-email writer can use (role, expertise, talks given)
+
+admins: [Benedetta, Andreas, Mads, Thibault]
 
 roles:          # what someone can go as
   - Attendee
@@ -24,7 +29,7 @@ team:
   - {name: Andreas, email: andreas@benford.tech, speaker: true}
   - {name: Mads, email: mads@benford.tech, title: Junior Audit Associate, speaker: true}
   - {name: Thibault, email: thibault@benford.tech, title: Junior Full-Stack Dev, speaker: true}
-  - {name: Benedetta, email: benedetta@benford.tech}
+  - {name: Benedetta, email: benedetta@benford.tech, github: bennimagni}
   - {name: Alexander, email: alexander@benford.tech, title: Deployment Strategist}
   - {name: Bent, email: bent@benford.tech}
   - {name: Eirik L, email: eirik@benford.tech}

@@ -130,7 +130,8 @@ RESEARCH_PROMPT = """Find upcoming events matching this brief:
 Search broadly (several queries, both English and Norwegian where relevant), then write a
 plain list. For each event give: name, organiser, start and end date, city, country, venue,
 format (in person / online / hybrid), audience, ticket cost, whether there is a call for speakers
-or sponsorship option (with deadline and link), the official URL, and the source URLs you used.
+or sponsorship option (with deadline and link), the organiser or speaker-programme contact (name and
+email, only if published), the official URL, and the source URLs you used.
 {kind_note}
 Aim for completeness: list every relevant event you find, up to about 25."""
 
@@ -212,6 +213,8 @@ def event_schema(university_names: list[str]) -> dict:
             "source_urls": {"type": "array", "items": s},
             "speaker_opportunity": {"type": "boolean"},
             "speaker_info": {"type": "string", "description": "CFP link / deadline / sponsor info, or empty"},
+            "contact_name": {"type": "string", "description": "organiser / speaker-programme contact person, or empty"},
+            "contact_email": {"type": "string", "description": "contact email exactly as published, or empty"},
             "relevance": {"type": "integer", "description": "0-100 fit for Benford"},
             "why_relevant": {"type": "string", "description": "one sentence"},
             "university": {"type": "string", "enum": university_names + ["Other", "None"]},
@@ -219,7 +222,7 @@ def event_schema(university_names: list[str]) -> dict:
         "required": [
             "name", "organiser", "start_date", "end_date", "date_confirmed", "city", "country",
             "venue", "format", "category", "audience", "cost", "url", "source_urls",
-            "speaker_opportunity", "speaker_info", "relevance", "why_relevant", "university",
+            "speaker_opportunity", "speaker_info", "contact_name", "contact_email", "relevance", "why_relevant", "university",
         ],
         "additionalProperties": False,
     }
