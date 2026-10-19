@@ -46,13 +46,18 @@ It does not log in to LinkedIn or scrape it.
 
 ## Using it
 
-- **Triage.** Click **Triage…** on an event. This copies a line like
-  `3f9a1c2b7d: {status: shortlisted, owner: "", note: ""}` and opens `data/triage.yaml` on GitHub.
-  Paste the line, set the status (`attending | shortlisted | maybe | skip`) and commit. The site rebuilds in about a minute.
-- **After an event:** set its line in `triage.yaml` to `status: attended` with `leads:` and `rating:` (1–5),
-  or `status: missed`. The **Track record** tab then shows events we went to, events we didn't
-  (missed, skipped, or relevant ones nobody picked up), and past events still marked attending under
-  **Did we go?** until someone updates them.
+- **Flag events.** Every card has **Interested** and **Pass** buttons. Pass asks why: wrong audience, too small,
+  too expensive, wrong location, not our topic, date clash or other. Past events have **We went** and **Didn't go**.
+  - The page updates straight away in your browser, then opens a pre-filled GitHub issue. Click **Create** to save the flag for the team.
+  - The `Triage flag` workflow writes it to `data/triage.yaml`, closes the issue and republishes in about a minute.
+  - Only the repo owner, collaborators and org members can save flags, so add teammates under Settings → Collaborators.
+    They need GitHub accounts.
+- **Passed events disappear** from Events and Hackathons for everyone. The Track record tab still lists them under "We didn't".
+- **It learns.** Each morning the scanner reads `triage.yaml`. Events marked interested or attended become examples
+  of "more like this". Passes, with their reasons, become "avoid these and anything similar". Both feed into the
+  search and the fit scores. The Scan log shows how many flags each run learned from.
+- **After an event**, mark it **We went** and add leads and a 1–5 rating in the issue note or in `triage.yaml`,
+  or mark it **Didn't go**. Past events still flagged interested show under Track record → **Did we go?**.
 - **Add an event by hand:** add it to `data/manual.yaml` (the **+ Add event** link opens it).
 - **Change what it looks for:** edit `config/searches.yaml` or `config/profile.md`.
 - **Calendars:** subscribe to `…/calendar/team.ics` (attending + shortlisted) or `…/calendar/radar.ics`

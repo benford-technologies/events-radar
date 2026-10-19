@@ -6,7 +6,7 @@ Combines scanned data, hand-added events (data/manual.yaml) and team decisions
   _site/api/events.json                     upcoming + past events (with triage)
   _site/api/hackathons.json                 hackathons pinned to universities
   _site/api/universities.json, runs.json, meta.json
-  _site/calendar/team.ics                   events marked attending / shortlisted
+  _site/calendar/team.ics                   events flagged interested / attending
   _site/calendar/radar.ics                  every upcoming event with relevance >= 60
 
 Usage: python scanner/build.py [--demo]   (--demo uses sample data when data/ is empty)
@@ -94,10 +94,11 @@ def main() -> int:
     for e in events + hackathons:
         t = triage.get(e["id"]) or {}
         e["status"] = t.get("status", e.get("status", "new"))
-        e["owner"] = t.get("owner", e.get("owner", ""))
+        e["owner"] = t.get("owner") or t.get("by") or e.get("owner", "")
         e["team_note"] = t.get("note", e.get("notes", ""))
         e["leads"] = t.get("leads", e.get("leads"))
         e["rating"] = t.get("rating", e.get("rating"))
+        e["reason"] = t.get("reason", e.get("reason", ""))
 
     key = lambda x: (x.get("start_date") or "9999", x.get("name", ""))
     events.sort(key=key)
@@ -127,7 +128,7 @@ def main() -> int:
 
     today = dt.date.today().isoformat()
     upcoming = [e for e in events + hackathons if (e.get("end_date") or e.get("start_date") or "9999") >= today]
-    team = [e for e in upcoming if e["status"] in ("attending", "shortlisted")]
+    team = [e for e in upcoming if e["status"] in ("interested", "attending", "shortlisted")]
     radar = [e for e in upcoming if e.get("relevance", 0) >= RADAR_MIN and e["status"] != "skip"]
     (OUT / "calendar" / "team.ics").write_text(ics(team, "Benford – events we're attending"))
     (OUT / "calendar" / "radar.ics").write_text(ics(radar, "Benford – events radar"))

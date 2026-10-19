@@ -67,6 +67,45 @@ def write_json(path: Path, data) -> None:
         f.write("\n")
 
 
+# ---------------------------------------------------------------- team feedback (learning)
+
+LIKED = {"interested", "shortlisted", "attending", "attended"}
+MAX_FEEDBACK = 40
+
+
+def team_feedback(items: list[dict]) -> tuple[str, dict]:
+    """Summarise what the team flagged so Claude finds more of what we like and less of what we pass on."""
+    triage = load_yaml(DATA / "triage.yaml")
+    by_id = {e["id"]: e for e in items}
+
+    def line(eid: str, t: dict) -> str:
+        e = by_id.get(eid, {})
+        parts = [e.get("name", eid), e.get("organiser"), e.get("city"), e.get("category")]
+        extra = [f"reason: {t['reason']}" if t.get("reason") else "",
+                 f"rated {t['rating']}/5" if t.get("rating") else "",
+                 f"{t['leads']} leads" if t.get("leads") else "",
+                 f"note: {t['note']}" if t.get("note") else ""]
+        extra = "; ".join(x for x in extra if x)
+        return "- " + " — ".join(str(p) for p in parts if p) + (f" [{extra}]" if extra else "")
+
+    recent = sorted(triage.items(), key=lambda kv: str((kv[1] or {}).get("on", "")), reverse=True)
+    liked = [line(k, v) for k, v in recent if (v or {}).get("status") in LIKED][:MAX_FEEDBACK]
+    passed = [line(k, v) for k, v in recent if (v or {}).get("status") == "skip"][:MAX_FEEDBACK]
+    missed = [line(k, v) for k, v in recent if (v or {}).get("status") == "missed"][:10]
+    if not (liked or passed or missed):
+        return "", {"liked": 0, "passed": 0}
+
+    text = "## What the team has told us (learn from this)\n"
+    if liked:
+        text += "\nThe team flagged these as interesting or went to them. Find more events like these and score similar ones higher:\n" + "\n".join(liked) + "\n"
+    if passed:
+        text += ("\nThe team passed on these. Don't list them again, and score events that are similar"
+                 " (same organiser, format, size or the stated reason) lower:\n" + "\n".join(passed) + "\n")
+    if missed:
+        text += "\nWe wanted to go to these but missed them, so flag their next editions early:\n" + "\n".join(missed) + "\n"
+    return text, {"liked": len(liked), "passed": len(passed)}
+
+
 # ---------------------------------------------------------------- Claude helpers
 
 def final_text(response) -> str:
@@ -79,6 +118,7 @@ RESEARCH_SYSTEM = """You research upcoming events for Benford Technologies' mark
 
 {profile}
 
+{feedback}
 Today is {today}. Only include events that start on or after today and within the next 12 months.
 Prefer official event pages over aggregators. Never invent an event, date or URL: if you can't
 confirm a detail, say it is unconfirmed."""
@@ -100,7 +140,7 @@ HACKATHON_NOTE = (
 )
 
 
-def research_with_claude(group: dict, profile: str, today: str) -> str:
+def research_with_claude(group: dict, profile: str, today: str, feedback: str = "") -> str:
     messages = [{
         "role": "user",
         "content": RESEARCH_PROMPT.format(
@@ -109,7 +149,7 @@ def research_with_claude(group: dict, profile: str, today: str) -> str:
         ),
     }]
     tools = [{"type": "web_search_20260209", "name": "web_search", "max_uses": 8}]
-    system = RESEARCH_SYSTEM.format(profile=profile, today=today)
+    system = RESEARCH_SYSTEM.format(profile=profile, today=today, feedback=feedback)
 
     for _ in range(MAX_CONTINUATIONS + 1):
         with client.beta.messages.stream(
@@ -195,10 +235,11 @@ EXTRACT_PROMPT = """Turn these research notes into structured events for Benford
 
 {profile}
 
+{feedback}
 Today is {today}. Rules:
 - Only events starting on or after today. Drop anything past, undated beyond 12 months, or not a real event.
 - Use only facts present in the notes. Unknown text fields are empty strings; never guess URLs.
-- relevance: 0-100 fit for Benford using the profile above. why_relevant: one short sentence.
+- relevance: 0-100 fit for Benford using the profile and the team's feedback above. why_relevant: one short sentence.
 - university: for hackathons, the matching university from the allowed list ("Other" if it is a
   university not on the list, "None" if no university is involved). For non-hackathons use "None".
 - category for hackathons is always "hackathon".
@@ -208,7 +249,7 @@ Today is {today}. Rules:
 </notes>"""
 
 
-def extract(notes: str, profile: str, today: str, university_names: list[str]) -> list[dict]:
+def extract(notes: str, profile: str, today: str, university_names: list[str], feedback: str = "") -> list[dict]:
     if not notes.strip():
         return []
     with client.beta.messages.stream(
@@ -222,7 +263,7 @@ def extract(notes: str, profile: str, today: str, university_names: list[str]) -
         },
         messages=[{
             "role": "user",
-            "content": EXTRACT_PROMPT.format(profile=profile, today=today, notes=notes),
+            "content": EXTRACT_PROMPT.format(profile=profile, today=today, notes=notes, feedback=feedback),
         }],
     ) as stream:
         response = stream.get_final_message()
@@ -299,12 +340,14 @@ def main() -> int:
         "hackathon": load_json(DATA / "hackathons.json", []),
     }
     all_new, errors = [], []
+    feedback, feedback_stats = team_feedback(stores["event"] + stores["hackathon"])
+    print(f"team feedback: {feedback_stats['liked']} liked, {feedback_stats['passed']} passed", flush=True)
 
     for g in groups:
         print(f"→ {g['id']} ({'firecrawl' if use_firecrawl else 'claude web search'})", flush=True)
         try:
-            notes = research_with_firecrawl(g) if use_firecrawl else research_with_claude(g, profile, today)
-            found = extract(notes, profile, today, uni_names)
+            notes = research_with_firecrawl(g) if use_firecrawl else research_with_claude(g, profile, today, feedback)
+            found = extract(notes, profile, today, uni_names, feedback)
         except Exception as exc:  # one failing group shouldn't sink the whole morning scan
             print(f"  ! {g['id']} failed: {exc}", file=sys.stderr)
             errors.append({"group": g["id"], "error": str(exc)[:500]})
@@ -331,6 +374,7 @@ def main() -> int:
         "new": len(all_new),
         "source": "firecrawl" if use_firecrawl else "claude_web_search",
         "model": MODEL,
+        "feedback": feedback_stats,
         "errors": errors,
     })
     write_json(DATA / "runs.json", runs[:60])

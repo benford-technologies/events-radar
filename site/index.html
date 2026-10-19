@@ -63,10 +63,9 @@
         <select id="f-status" aria-label="Status">
           <option value="">Any status</option>
           <option value="new">Not triaged</option>
+          <option value="interested">Interested</option>
           <option value="attending">Attending</option>
-          <option value="shortlisted">Shortlisted</option>
-          <option value="maybe">Maybe</option>
-          <option value="skip">Skipped</option>
+          <option value="skip">Passed</option>
         </select>
         <label class="range"><span class="mono">Min fit</span><input id="f-min" type="range" min="0" max="100" step="5" value="40"><output id="f-min-out">40</output></label>
         <div class="toggles">
@@ -101,11 +100,11 @@
           <button data-view="didnt" aria-pressed="false">We didn't <b>0</b></button>
           <button data-view="confirm" aria-pressed="false">Did we go? <b>0</b></button>
         </div>
-        <p class="hint">Past events, newest first. Log outcomes with <span class="mono">Triage…</span></p>
+        <p class="hint">Past events, newest first. Mark each one <b>We went</b> or <b>Didn't go</b>.</p>
       </div>
       <p class="banner" id="record-confirm-hint" hidden>
-        These were marked attending or shortlisted and have now happened. Set each to
-        <code>attended</code> (with leads and a 1–5 rating) or <code>missed</code>.
+        These were flagged interested and have now happened. Mark each one <b>We went</b> or <b>Didn't go</b>.
+        Add leads and a 1–5 rating in the issue note, or in data/triage.yaml.
       </p>
       <div id="record-list"></div>
     </section>
