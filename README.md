@@ -31,7 +31,7 @@ It does not log in to LinkedIn or scrape it.
 
 ## Deploy (about 10 minutes)
 
-1. Create a GitHub repo, e.g. `benford-tech/events-radar`, and push this folder:
+1. The repo lives at `benford-technologies/events-radar`. For a fresh copy elsewhere, create a repo and push this folder:
    ```bash
    git remote add origin git@github.com:<org>/events-radar.git && git push -u origin main
    ```

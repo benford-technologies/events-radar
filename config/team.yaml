@@ -26,23 +26,23 @@ pitch_statuses: # where the speaker pitch stands
 team:
   - {name: John, email: john@benford.tech, speaker: true}
   - {name: Niosha, email: niosha@benford.tech, title: "Partner, Audit", speaker: true}
-  - {name: Andreas, email: andreas@benford.tech, speaker: true}
+  - {name: Andreas, email: andreas@benford.tech, speaker: true, github: Andreasrys}
   - {name: Mads, email: mads@benford.tech, title: Junior Audit Associate, speaker: true}
   - {name: Thibault, email: thibault@benford.tech, title: Junior Full-Stack Dev, speaker: true}
   - {name: Benedetta, email: benedetta@benford.tech, github: bennimagni}
-  - {name: Alexander, email: alexander@benford.tech, title: Deployment Strategist}
-  - {name: Bent, email: bent@benford.tech}
-  - {name: Eirik L, email: eirik@benford.tech}
-  - {name: Eirik M, email: eirik.m@benford.tech}
+  - {name: Alexander, email: alexander@benford.tech, title: Deployment Strategist, github: LordHustad}
+  - {name: Bent, email: bent@benford.tech, github: benteven}
+  - {name: Eirik L, email: eirik@benford.tech, github: LorgeN}
+  - {name: Eirik M, email: eirik.m@benford.tech, github: Eirmas}
   - {name: Felix, email: felix@benford.tech}
-  - {name: Henrik, email: henrik@benford.tech}
-  - {name: Jørgen, email: jorgen@benford.tech}
+  - {name: Henrik, email: henrik@benford.tech, github: henrikbenford}
+  - {name: Jørgen, email: jorgen@benford.tech, github: jorgevha}
   - {name: Kristian, email: kristian@benford.tech}
   - {name: Lise, email: lise@benford.tech, title: Deployment Strategist Intern}
-  - {name: Muhtasim, email: muhtasim@benford.tech, title: Software Engineer / Audit Intern}
+  - {name: Muhtasim, email: muhtasim@benford.tech, title: Software Engineer / Audit Intern, github: MuhtasimM}
   - {name: Noah, email: noah@benford.tech}
-  - {name: Simon, email: simon@benford.tech}
+  - {name: Simon, email: simon@benford.tech, github: smholsen}
   - {name: Svi, email: svi@benford.tech, title: Auditor}
   - {name: Toby, email: toby@benford.tech}
-  - {name: Vegard, email: vegard@benford.tech}
+  - {name: Vegard, email: vegard@benford.tech, github: vegardolsvik}
   - {name: Yngve, email: yngve@benford.tech}
