@@ -14,7 +14,7 @@
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
 
-  const state = { events: [], hackathons: [], universities: [], runs: [], meta: {}, region: "london", uni: null };
+  const state = { events: [], hackathons: [], universities: [], runs: [], meta: {}, region: "london", uni: null, recordView: "went" };
 
   // ---------------------------------------------------------------- load
   async function load() {
@@ -67,7 +67,7 @@
     clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
-  function eventCard(e, compact = false) {
+  function eventCard(e, compact = false, extraChips = "") {
     const d = e.start_date ? new Date(e.start_date) : null;
     const dateBlock = d
       ? `<div class="date"><b>${d.getDate()}</b><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span></div>`
@@ -77,6 +77,7 @@
     const fitCls = fit >= 75 ? "hi" : fit >= 55 ? "mid" : "";
     const url = safeUrl(e.url);
     const chips = [
+      extraChips,
       isNew(e) && !isPast(e) ? `<span class="chip new">New</span>` : "",
       e.status && e.status !== "new" ? `<span class="chip ${esc(e.status)}">${esc(e.status)}${e.owner ? " · " + esc(e.owner) : ""}</span>` : "",
       `<span class="chip">${esc(CATEGORY[e.category] || e.category || "")}</span>`,
@@ -156,84 +157,115 @@
       $("#event-list").innerHTML = `<div class="empty">No events match these filters.</div>`;
       return;
     }
+    $("#event-list").innerHTML = groupedByMonth(list);
+  }
+
+  // ---------------------------------------------------------------- hackathons tab
+  const regionOf = (country) => (countryKey(country) === "norway" ? "norway" : countryKey(country) === "uk" ? "london" : "other");
+
+  function setRegion(r) {
+    state.region = r; state.uni = null;
+    $$("#hack-region button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.region === r)));
+    renderHackathons();
+  }
+
+  function groupedByMonth(list, card = eventCard) {
     let html = "", month = null;
     for (const e of list) {
       const m = e.start_date ? new Date(e.start_date).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "Date to be confirmed";
       if (m !== month) { html += `<h2 class="month">${esc(m)}</h2>`; month = m; }
-      html += eventCard(e);
+      html += card(e);
     }
-    $("#event-list").innerHTML = html;
-  }
-
-  // ---------------------------------------------------------------- hackathons tab
-  let map, markers;
-  const REGIONS = {
-    london: { center: [51.505, -0.16], zoom: 11 },
-    norway: { center: [64.5, 12.5], zoom: 4 },
-    all: { center: [58, 5], zoom: 4 },
-  };
-  function inRegion(u) {
-    if (state.region === "all") return true;
-    return state.region === "norway" ? countryKey(u.country) === "norway" : countryKey(u.country) === "uk";
-  }
-
-  function initMap() {
-    if (map || !window.L) return;
-    map = L.map("map", { scrollWheelZoom: false });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 18,
-    }).addTo(map);
-    markers = L.layerGroup().addTo(map);
-    setRegion(state.region);
-  }
-
-  function setRegion(r) {
-    state.region = r; state.uni = null;
-    $$(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.region === r)));
-    if (map) map.setView(REGIONS[r].center, REGIONS[r].zoom);
-    renderHackathons();
+    return html;
   }
 
   function renderHackathons() {
-    const upcoming = state.hackathons.filter((h) => !isPast(h) && h.status !== "skip");
-    const byUni = {};
-    for (const h of upcoming) (byUni[h.university] = byUni[h.university] || []).push(h);
+    const inRegion = (country) => state.region === "all" || regionOf(country) === state.region;
+    const upcoming = state.hackathons.filter((h) => !isPast(h) && h.status !== "skip" && inRegion(h.country));
+    const count = {};
+    for (const h of upcoming) count[h.university] = (count[h.university] || 0) + 1;
 
-    if (markers) {
-      markers.clearLayers();
-      for (const u of state.universities) {
-        const n = (byUni[u.name] || []).length;
-        const size = n ? 26 + Math.min(n, 6) * 3 : 14;
-        const icon = L.divIcon({
-          className: "", iconSize: [size, size],
-          html: `<div class="pin${n ? "" : " zero"}" style="width:${size}px;height:${size}px">${n || ""}</div>`,
-        });
-        L.marker([u.lat, u.lng], { icon, title: u.name })
-          .bindTooltip(`${esc(u.name)}<br>${n} upcoming hackathon${n === 1 ? "" : "s"}`)
-          .on("click", () => { state.uni = u.name; renderHackathons(); })
-          .addTo(markers);
-      }
-    }
+    // University directory: every tracked university in the region, busiest first.
+    const unis = state.universities
+      .filter((u) => inRegion(u.country))
+      .map((u) => ({ ...u, n: count[u.name] || 0 }))
+      .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+    const covered = unis.filter((u) => u.n).length;
+    $("#uni-summary").innerHTML =
+      `<b>${upcoming.length}</b> upcoming hackathon${upcoming.length === 1 ? "" : "s"} across <b>${covered}</b> of ${unis.length} universities`;
+    $("#uni-chips").innerHTML = unis.map((u) => `
+      <button class="uni${u.n ? "" : " zero"}" data-uni="${esc(u.name)}" aria-pressed="${state.uni === u.name}">
+        <span>${esc(u.name)}</span><b>${u.n}</b>
+      </button>`).join("");
 
-    const uniByName = Object.fromEntries(state.universities.map((u) => [u.name, u]));
-    let list = upcoming.filter((h) => {
-      const u = uniByName[h.university];
-      if (u) return inRegion(u);
-      // hackathons not tied to a mapped university: place them by country
-      return state.region === "all" || countryKey(h.country) === (state.region === "norway" ? "norway" : "uk");
+    const list = state.uni ? upcoming.filter((h) => h.university === state.uni) : upcoming;
+    const withUni = (h) => eventCard({
+      ...h,
+      organiser: [h.organiser, !["None", "Other", ""].includes(h.university || "") ? h.university : ""].filter(Boolean).join(" · "),
     });
-    if (state.uni) list = list.filter((h) => h.university === state.uni);
-
-    $("#uni-filter-label").innerHTML = state.uni
-      ? `Showing <b>${esc(state.uni)}</b> · <a href="#" id="clear-uni">show all</a>`
-      : "Click a university to filter the list.";
-    const clear = $("#clear-uni");
-    if (clear) clear.onclick = (ev) => { ev.preventDefault(); state.uni = null; renderHackathons(); };
-
     $("#hack-list").innerHTML = list.length
-      ? list.map((h) => eventCard({ ...h, organiser: [h.organiser, h.university && !["None", "Other"].includes(h.university) ? h.university : ""].filter(Boolean).join(" · ") }, true)).join("")
-      : `<div class="empty">No upcoming hackathons found here yet.</div>`;
+      ? groupedByMonth(list, withUni)
+      : `<div class="empty">${state.uni ? `No upcoming hackathons found at ${esc(state.uni)} yet.` : "No upcoming hackathons found here yet."}</div>`;
+  }
+
+  // ---------------------------------------------------------------- track record tab
+  // Past events sorted into what we did about them.
+  function outcomeOf(e) {
+    if (e.status === "attended") return "went";
+    if (e.status === "attending" || e.status === "shortlisted") return "confirm";   // planned, not updated yet
+    if (e.status === "missed") return "missed";                                      // planned, didn't make it
+    if (e.status === "skip") return "skipped";                                       // decided not to go
+    if ((Number(e.relevance) || 0) >= 60) return "passed";                          // relevant, nobody picked it up
+    return null;
+  }
+  const OUTCOME_LABEL = {
+    went: "We went", confirm: "Did we go?", missed: "Planned, missed", skipped: "Decided to skip", passed: "Not pursued",
+  };
+
+  function recordCard(e) {
+    const o = outcomeOf(e);
+    const extra = [
+      `<span class="chip outcome ${o}">${OUTCOME_LABEL[o]}</span>`,
+      e.leads ? `<span class="chip">${esc(e.leads)} lead${Number(e.leads) === 1 ? "" : "s"}</span>` : "",
+      e.rating ? `<span class="chip" title="Worth it, 1–5">Worth it ${esc(e.rating)}/5</span>` : "",
+      e.owner ? `<span class="chip">${esc(e.owner)}</span>` : "",
+    ].join("");
+    return eventCard({ ...e, status: "new" }, false, extra);
+  }
+
+  function setRecordView(v) {
+    state.recordView = v;
+    $$("#record-view button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+    renderRecord();
+  }
+
+  function renderRecord() {
+    const thisYear = today.slice(0, 4);
+    const past = [...state.events, ...state.hackathons].filter(isPast).filter((e) => outcomeOf(e));
+    const by = (o) => past.filter((e) => outcomeOf(e) === o);
+    const went = by("went"), confirm = by("confirm");
+    const didnt = past.filter((e) => ["missed", "skipped", "passed"].includes(outcomeOf(e)));
+    const leads = went.reduce((s, e) => s + (Number(e.leads) || 0), 0);
+
+    $("#record-stats").innerHTML = [
+      [went.filter((e) => (e.start_date || "").startsWith(thisYear)).length, `events attended in ${thisYear}`, true],
+      [leads, "leads from events"],
+      [by("missed").length, "planned but missed"],
+      [by("passed").length + by("skipped").length, "relevant ones we passed on"],
+    ].map(([n, l, accent]) => `<div class="stat${accent ? " accent" : ""}"><b>${n}</b><span class="mono">${l}</span></div>`).join("");
+
+    const views = { went, didnt, confirm };
+    $$("#record-view button").forEach((b) => { $("b", b).textContent = views[b.dataset.view].length; });
+    $("#record-confirm-hint").hidden = state.recordView !== "confirm" || !confirm.length;
+
+    const newestFirst = (a, b) => (b.start_date || "").localeCompare(a.start_date || "");
+    const list = views[state.recordView].slice().sort(newestFirst);
+    const empty = {
+      went: "Nothing logged yet. After an event, mark it <code>attended</code> in triage.yaml.",
+      didnt: "No missed or skipped events yet.",
+      confirm: "All past events are up to date.",
+    };
+    $("#record-list").innerHTML = list.length ? groupedByMonth(list, recordCard) : `<div class="empty">${empty[state.recordView]}</div>`;
   }
 
   // ---------------------------------------------------------------- runs tab
@@ -254,7 +286,10 @@
   async function copyTriage(id) {
     const e = [...state.events, ...state.hackathons].find((x) => x.id === id);
     if (!e) return;
-    const line = `${e.id}: {status: shortlisted, owner: "", note: ""}  # ${e.name.replace(/[\r\n#]/g, " ")}`;
+    const fields = isPast(e)
+      ? `{status: attended, owner: "", leads: 0, rating: 3, note: ""}`   // or status: missed
+      : `{status: shortlisted, owner: "", note: ""}`;
+    const line = `${e.id}: ${fields}  # ${e.name.replace(/[\r\n#]/g, " ")}`;
     try { await navigator.clipboard.writeText(line); } catch { prompt("Copy this line:", line); return; }
     if (state.meta.triage_edit_url) {
       toast("Copied. Paste it into triage.yaml (opening GitHub)…");
@@ -268,16 +303,20 @@
   function showTab(name) {
     $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
     $$(".tab").forEach((s) => (s.hidden = s.id !== "tab-" + name));
-    if (name === "hackathons") { initMap(); setTimeout(() => map && map.invalidateSize(), 0); renderHackathons(); }
+    if (name === "hackathons") renderHackathons();
+    if (name === "record") renderRecord();
     try { localStorage.setItem("radar-tab", name); } catch {}
   }
 
   $$(".tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
-  $$(".seg button").forEach((b) => b.addEventListener("click", () => setRegion(b.dataset.region)));
+  $$("#hack-region button").forEach((b) => b.addEventListener("click", () => setRegion(b.dataset.region)));
+  $$("#record-view button").forEach((b) => b.addEventListener("click", () => setRecordView(b.dataset.view)));
   FILTERS.forEach((id) => $("#" + id).addEventListener("input", () => { renderEvents(); saveFilters(); }));
   document.addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-copy]");
     if (b) copyTriage(b.dataset.copy);
+    const u = ev.target.closest("[data-uni]");
+    if (u) { state.uni = state.uni === u.dataset.uni ? null : u.dataset.uni; renderHackathons(); }
   });
 
   load().then(() => {

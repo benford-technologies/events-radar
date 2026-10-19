@@ -3,10 +3,11 @@
 Every morning a GitHub Action searches the web for events Benford should attend: CFO and finance-leader
 events, audit and accounting conferences, fintech, founder and investor events, open calls for speakers,
 and university hackathons in London and Norway. It scores each event for fit, stores the results in
-this repo and publishes a dashboard on GitHub Pages.
+this repo and publishes a dashboard on GitHub Pages. The dashboard has four tabs: **Events** (what's coming up),
+**Hackathons** (by university), **Track record** (where we went and where we didn't) and **Scan log**.
 
 ```
-config/        what to look for: profile.md (who we are), searches.yaml (search groups), universities.yaml (map pins)
+config/        what to look for: profile.md (who we are), searches.yaml (search groups), universities.yaml (tracked universities)
 scanner/       scan.py (daily research + extraction), build.py (builds the site), ids.py
 data/          output, committed by the bot: events.json, hackathons.json, runs.json
                edited by the team: triage.yaml (decisions), manual.yaml (hand-added events)
@@ -48,6 +49,10 @@ It does not log in to LinkedIn or scrape it.
 - **Triage.** Click **Triage…** on an event. This copies a line like
   `3f9a1c2b7d: {status: shortlisted, owner: "", note: ""}` and opens `data/triage.yaml` on GitHub.
   Paste the line, set the status (`attending | shortlisted | maybe | skip`) and commit. The site rebuilds in about a minute.
+- **After an event:** set its line in `triage.yaml` to `status: attended` with `leads:` and `rating:` (1–5),
+  or `status: missed`. The **Track record** tab then shows events we went to, events we didn't
+  (missed, skipped, or relevant ones nobody picked up), and past events still marked attending under
+  **Did we go?** until someone updates them.
 - **Add an event by hand:** add it to `data/manual.yaml` (the **+ Add event** link opens it).
 - **Change what it looks for:** edit `config/searches.yaml` or `config/profile.md`.
 - **Calendars:** subscribe to `…/calendar/team.ics` (attending + shortlisted) or `…/calendar/radar.ics`
@@ -61,8 +66,8 @@ UNCL MCP) can read it from:
 | URL | Contents |
 |---|---|
 | `/api/events.json` | all events with triage status, owner, note |
-| `/api/hackathons.json` | hackathons with the university they're pinned to |
-| `/api/universities.json` | map universities and coordinates |
+| `/api/hackathons.json` | hackathons with their university |
+| `/api/universities.json` | tracked universities |
 | `/api/runs.json` | scan log (date, new count, errors) |
 | `/calendar/*.ics` | calendar feeds |
 

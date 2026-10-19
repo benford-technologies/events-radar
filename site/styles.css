@@ -181,24 +181,33 @@ details.sources a { word-break: break-all; color: var(--ink-2); }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 .hint { margin: 0; color: var(--muted); font-size: 13px; }
 .hint a { color: var(--ink); }
-.map-layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
-#map { height: 620px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); overflow: hidden; }
-#hack-list { max-height: 620px; overflow: auto; }
-#hack-list .ev { grid-template-columns: 60px 1fr; padding: 14px; gap: 14px; }
-#hack-list .ev h3 { font-size: 18px; }
-#hack-list .date b { font-size: 26px; }
-.pin {
-  background: var(--green); color: var(--green-ink); border: 2px solid var(--surface); border-radius: 50%;
-  display: grid; place-items: center; font: 600 12px/1 var(--sans); box-shadow: 0 2px 6px rgba(0,0,0,.25);
+.seg button b { font: 500 11px var(--mono); margin-left: 6px; color: var(--muted); }
+.hint b { color: var(--ink); font-weight: 600; }
+
+/* university directory */
+.unis { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.uni {
+  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 6px 0 14px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink);
+  font: 500 13px var(--sans); cursor: pointer;
 }
-.pin.zero { background: #8a8a85; }
-.leaflet-container { font: inherit; background: var(--surface); }
-.leaflet-tile-pane { filter: grayscale(1) contrast(.85) brightness(1.06); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .leaflet-tile-pane { filter: grayscale(1) invert(1) contrast(.8) brightness(.9); }
-}
-:root[data-theme="dark"] .leaflet-tile-pane { filter: grayscale(1) invert(1) contrast(.8) brightness(.9); }
-.leaflet-tooltip { font: 13px var(--sans); border-radius: 8px; }
+.uni b { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  background: var(--green); color: var(--green-ink); font: 500 11px var(--mono); }
+.uni.zero { color: var(--muted); background: transparent; }
+.uni.zero b { background: var(--pill); color: var(--muted); }
+.uni:hover { border-color: color-mix(in srgb, var(--ink) 25%, transparent); }
+.uni[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* track record */
+.record .ev.past { opacity: 1; }
+.chip.outcome.went { background: var(--green); color: var(--green-ink); }
+.chip.outcome.confirm { background: var(--lime); color: var(--lime-ink); }
+.chip.outcome.missed { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+.chip.outcome.skipped, .chip.outcome.passed { background: var(--olive-soft); color: var(--olive); }
+.chip.attended { background: var(--green); color: var(--green-ink); }
+.chip.missed { color: var(--danger); }
+code { font-family: var(--mono); font-size: .9em; padding: 1px 6px; border-radius: 6px; background: var(--pill); }
+p.banner { display: block; border-radius: 12px; margin: 0 0 12px; }
 
 /* ------------------------------------------------ runs */
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
@@ -221,9 +230,6 @@ td.num { font-family: var(--serif); font-size: 18px; }
 /* ------------------------------------------------ responsive */
 @media (max-width: 900px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .map-layout { grid-template-columns: 1fr; }
-  #map { height: 400px; }
-  #hack-list { max-height: none; }
   .hide-sm { display: none; }
 }
 @media (max-width: 600px) {
@@ -240,3 +246,5 @@ td.num { font-family: var(--serif); font-size: 18px; }
   .fit span { margin: 0; }
   .range input { width: 80px; }
 }
+
+[hidden] { display: none !important; }

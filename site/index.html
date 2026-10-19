@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Libre+Caslon+Text:wght@400;700&family=Roboto+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,6 +19,7 @@
       <nav class="tabs" role="tablist" aria-label="Sections">
         <button role="tab" data-tab="events" aria-selected="true">Events</button>
         <button role="tab" data-tab="hackathons" aria-selected="false">Hackathons</button>
+        <button role="tab" data-tab="record" aria-selected="false">Track record</button>
         <button role="tab" data-tab="runs" aria-selected="false">Scan log</button>
       </nav>
       <div class="nav-actions">
@@ -81,17 +81,33 @@
     <!-- HACKATHONS -->
     <section id="tab-hackathons" class="tab" hidden>
       <div class="map-head">
-        <div class="seg" role="group" aria-label="Region">
+        <div class="seg" id="hack-region" role="group" aria-label="Region">
           <button data-region="london" aria-pressed="true">London</button>
           <button data-region="norway" aria-pressed="false">Norway</button>
           <button data-region="all" aria-pressed="false">Both</button>
         </div>
-        <p class="hint" id="uni-filter-label">Click a university to filter the list.</p>
+        <p class="hint" id="uni-summary"></p>
       </div>
-      <div class="map-layout">
-        <div id="map" aria-label="Map of universities and hackathons"></div>
-        <div id="hack-list"></div>
+      <div class="unis" id="uni-chips" aria-label="Filter by university"></div>
+      <div id="hack-list"></div>
+    </section>
+
+    <!-- TRACK RECORD -->
+    <section id="tab-record" class="tab record" hidden>
+      <div class="stats" id="record-stats"></div>
+      <div class="map-head">
+        <div class="seg" id="record-view" role="group" aria-label="Show">
+          <button data-view="went" aria-pressed="true">We went <b>0</b></button>
+          <button data-view="didnt" aria-pressed="false">We didn't <b>0</b></button>
+          <button data-view="confirm" aria-pressed="false">Did we go? <b>0</b></button>
+        </div>
+        <p class="hint">Past events, newest first. Log outcomes with <span class="mono">Triage…</span></p>
       </div>
+      <p class="banner" id="record-confirm-hint" hidden>
+        These were marked attending or shortlisted and have now happened. Set each to
+        <code>attended</code> (with leads and a 1–5 rating) or <code>missed</code>.
+      </p>
+      <div id="record-list"></div>
     </section>
 
     <!-- RUNS -->
@@ -107,7 +123,6 @@
 
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

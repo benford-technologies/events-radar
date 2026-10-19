@@ -90,11 +90,14 @@ def main() -> int:
         (hackathons if m["kind"] == "hackathon" else events).append(m)
 
     triage = load_yaml(DATA / "triage.yaml")
+    # triage.yaml wins; manual.yaml / sample entries may carry their own status and outcome
     for e in events + hackathons:
         t = triage.get(e["id"]) or {}
-        e["status"] = t.get("status", "new")
-        e["owner"] = t.get("owner", "")
-        e["team_note"] = t.get("note", "")
+        e["status"] = t.get("status", e.get("status", "new"))
+        e["owner"] = t.get("owner", e.get("owner", ""))
+        e["team_note"] = t.get("note", e.get("notes", ""))
+        e["leads"] = t.get("leads", e.get("leads"))
+        e["rating"] = t.get("rating", e.get("rating"))
 
     key = lambda x: (x.get("start_date") or "9999", x.get("name", ""))
     events.sort(key=key)

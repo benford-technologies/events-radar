@@ -1,9 +1,15 @@
 # Team decisions on scanned events. The scanner never overwrites this file.
 # Copy a line from the dashboard ("Copy triage line") and paste it here.
 #
-# status: attending | shortlisted | maybe | skip
-# owner:  who is on it (optional)
-# note:   free text (optional)
+# Before the event   status: attending | shortlisted | maybe | skip
+# After the event    status: attended (we went) | missed (planned, didn't make it)
+# owner:   who is on it (optional)
+# note:    free text (optional)
+# leads:   number of useful contacts / leads from it (after the event, optional)
+# rating:  1-5, was it worth it (after the event, optional)
 #
-# Example:
+# Past events still marked attending/shortlisted show up under Track record → "Did we go?".
+#
+# Examples:
 # 3f9a1c2b7d: {status: attending, owner: John, note: "Ask about a panel slot"}
+# 8c21e0d4aa: {status: attended, owner: John, leads: 4, rating: 4, note: "Met 2 CFOs from PE-backed cos"}

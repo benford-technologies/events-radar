@@ -4,4 +4,5 @@
 #         category (cfo | audit_accounting | finance_tech | founders_investors | hackathon | other),
 #         kind (event | hackathon), university (hackathons only, must match config/universities.yaml),
 #         speaker_opportunity (true/false), notes
+#         For past events you went to: status: attended, leads, rating (1-5)
 events: []
