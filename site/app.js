@@ -29,9 +29,7 @@
     });
 
     const last = state.runs[0];
-    $("#last-scan").textContent = last
-      ? `CFO events, audit and accounting conferences, speaker calls and university hackathons across London and Norway. Last scanned ${fmtDateTime(last.finished_at)}, ${last.new} new.`
-      : "CFO events, audit and accounting conferences, speaker calls and university hackathons across London and Norway. Refreshed every morning.";
+    state.scanNote = last ? ` Last scanned ${fmtDateTime(last.finished_at)}, ${last.new} new.` : " Refreshed every morning.";
     $("#demo-banner").hidden = !state.meta.demo;
     if (state.meta.manual_edit_url) {
       const a = $("#add-event");
@@ -359,7 +357,26 @@
   }
 
   // ---------------------------------------------------------------- wiring
+  const HERO = {
+    events: ["Events radar", "Where we should be next",
+      "CFO events, audit and accounting conferences, and speaker calls across London and Norway."],
+    hackathons: ["University hackathons", "Where students are building",
+      "Hackathons at universities in London and Norway, for hiring and employer brand."],
+    record: ["Track record", "Where we've been",
+      "Events we went to, the ones we missed or passed on, and what they brought in."],
+    runs: ["Scan log", "How the radar is running",
+      "Every morning's scan: what it searched, what it found and what it learned from the team's flags."],
+  };
+  function setHero(name) {
+    const [eyebrow, title, lede] = HERO[name] || HERO.events;
+    $("#hero-eyebrow").textContent = `Benford · ${eyebrow}`;
+    $("#hero-title").textContent = title;
+    $("#hero-lede").textContent = lede + (name === "events" || name === "hackathons" ? state.scanNote || "" : "");
+    document.title = `${eyebrow} · Benford`;
+  }
+
   function showTab(name) {
+    setHero(name);
     $$(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
     $$(".tab").forEach((s) => (s.hidden = s.id !== "tab-" + name));
     if (name === "hackathons") renderHackathons();
